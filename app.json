@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DermaCheck",
-    "slug": "DermaCheck",
+    "slug": "dermacheck",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DermaCheck necesita acceso a tu galería para analizar una foto de tu rostro.",
+          "cameraPermission": "DermaCheck necesita la cámara para capturar una foto de tu rostro con fines de análisis preliminar."
+        }
+      ]
+    ]
   }
 }
