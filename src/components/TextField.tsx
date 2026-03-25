@@ -7,13 +7,15 @@ type Props = TextInputProps & {
 };
 
 export function TextField({ label, error, style, ...rest }: Props) {
+  const { accessibilityLabel, ...inputProps } = rest;
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={[styles.input, error ? styles.inputError : null, style]}
-        {...rest}
+        accessibilityLabel={accessibilityLabel ?? label}
+        {...inputProps}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -34,7 +36,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
     backgroundColor: colors.surface,
