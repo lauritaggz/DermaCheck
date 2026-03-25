@@ -37,6 +37,7 @@ backend/.env
 backend/dermacheck.db
 backend/*.db
 backend/venv/
+backend/uploads/
 backend/**/__pycache__/
 backend/**/*.pyc
 
