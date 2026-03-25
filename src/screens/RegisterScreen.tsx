@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FormMessage, PrimaryButton, ScreenContainer, TextField } from '../components';
 import { useAppState } from '../context/AppContext';
 import type { RootStackParamList } from '../navigation/types';
+import { LEGAL_DOC_VERSION } from '../constants/legalDocuments';
 import { authService } from '../services';
 import { colors, spacing, typography } from '../theme';
 import type { RegisterFieldKey } from '../utils/validation';
@@ -82,7 +83,7 @@ export function RegisterScreen({ navigation }: Props) {
       return;
     }
     setUser(result.user);
-    setConsent({ accepted: false, acceptedAt: null, policyVersion: '1.0-demo' });
+    setConsent({ accepted: false, acceptedAt: null, policyVersion: LEGAL_DOC_VERSION });
     navigation.reset({
       index: 0,
       routes: [{ name: 'Consent' }],
