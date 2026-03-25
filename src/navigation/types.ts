@@ -7,6 +7,7 @@ export type RootStackParamList = {
   Register: undefined;
   Consent: undefined;
   Home: undefined;
+  LegalAcceptances: undefined;
   ImagePicker: undefined;
   Preview: undefined;
   Processing: undefined;

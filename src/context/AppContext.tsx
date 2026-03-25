@@ -1,11 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { LEGAL_DOC_VERSION } from '../constants/legalDocuments';
 import type { ConsentStatus, ImageAsset, SkinAnalysisResult, User } from '../types';
 import { clearPersistedSession, loadPersistedSession, savePersistedSession } from '../services/sessionStorage';
 
 const DEFAULT_CONSENT: ConsentStatus = {
   accepted: false,
   acceptedAt: null,
-  policyVersion: '1.0-demo',
+  policyVersion: LEGAL_DOC_VERSION,
 };
 
 type AppContextValue = {

@@ -43,6 +43,17 @@ export function HomeScreen({ navigation }: Props) {
         </Text>
         <PrimaryButton label="Comenzar análisis" onPress={() => navigation.navigate('ImagePicker')} />
       </Card>
+      <Card style={styles.cardSecondary}>
+        <Text style={styles.cardTitle}>Legal y privacidad</Text>
+        <Text style={styles.cardBody}>
+          Consulta qué documentos aceptaste y la fecha y hora registrada (desde el servidor si hay API configurada).
+        </Text>
+        <PrimaryButton
+          label="Ver documentos aceptados"
+          variant="secondary"
+          onPress={() => navigation.navigate('LegalAcceptances')}
+        />
+      </Card>
     </ScreenContainer>
   );
 }
@@ -70,6 +81,9 @@ const styles = StyleSheet.create({
   },
   card: {
     marginTop: spacing.lg,
+  },
+  cardSecondary: {
+    marginTop: spacing.md,
   },
   cardTitle: {
     ...typography.subtitle,
