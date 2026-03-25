@@ -1,54 +1,53 @@
 import { delay } from '../utils/delay';
 import type { AuthCredentials, RegisterPayload, User } from '../types';
+import {
+  addAccount,
+  emailExists,
+  findAccountByEmail,
+  mockAccountToUser,
+  type MockStoredAccount,
+} from './mockAccountStorage';
 
-const MOCK_LATENCY_MS = 650;
+const MOCK_LATENCY_MS = 550;
 
-function makeUser(params: { id?: string; email: string; name: string; createdAt?: string }): User {
-  return {
-    id: params.id ?? `user_${Date.now()}`,
-    email: params.email,
-    name: params.name,
-    createdAt: params.createdAt ?? new Date().toISOString(),
-  };
-}
-
-/** Sprint 1: credenciales aceptadas si email y password no vacíos y email contiene @ */
-function validateCredentials(email: string, password: string): string | null {
-  if (!email.trim() || !password.trim()) {
-    return 'Completa correo y contraseña.';
-  }
-  if (!email.includes('@')) {
-    return 'Introduce un correo válido.';
-  }
-  if (password.length < 4) {
-    return 'La contraseña debe tener al menos 4 caracteres (demo).';
-  }
-  return null;
-}
+/** Errores de negocio mock (sin validar formato aquí; lo hace la pantalla). */
+export const AuthMessages = {
+  emailNotRegistered:
+    'No encontramos una cuenta con este correo. ¿Quieres crear una?',
+  wrongPassword: 'Contraseña incorrecta. Intenta de nuevo o usa “Olvidé mi contraseña” en una versión productiva.',
+  emailAlreadyRegistered: 'Este correo ya está registrado. Inicia sesión o usa otro correo.',
+} as const;
 
 export const authService = {
   async login(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
     await delay(MOCK_LATENCY_MS);
-    const err = validateCredentials(credentials.email, credentials.password);
-    if (err) return { error: err };
-    const user = makeUser({
-      email: credentials.email.trim().toLowerCase(),
-      name: credentials.email.split('@')[0] ?? 'Usuario',
-    });
-    return { user };
+    const email = credentials.email.trim().toLowerCase();
+    const acc = await findAccountByEmail(email);
+    if (!acc) {
+      return { error: AuthMessages.emailNotRegistered };
+    }
+    if (acc.password !== credentials.password) {
+      return { error: AuthMessages.wrongPassword };
+    }
+    return { user: mockAccountToUser(acc) };
   },
 
   async register(payload: RegisterPayload): Promise<{ user: User } | { error: string }> {
     await delay(MOCK_LATENCY_MS);
-    const err = validateCredentials(payload.email, payload.password);
-    if (err) return { error: err };
-    if (!payload.name.trim()) {
-      return { error: 'Indica tu nombre.' };
+    const email = payload.email.trim().toLowerCase();
+    if (await emailExists(email)) {
+      return { error: AuthMessages.emailAlreadyRegistered };
     }
-    const user = makeUser({
-      email: payload.email.trim().toLowerCase(),
+    const userId = `user_${Date.now()}`;
+    const createdAt = new Date().toISOString();
+    const account: MockStoredAccount = {
+      id: userId,
+      email,
+      password: payload.password,
       name: payload.name.trim(),
-    });
-    return { user };
+      createdAt,
+    };
+    await addAccount(account);
+    return { user: mockAccountToUser(account) };
   },
 };

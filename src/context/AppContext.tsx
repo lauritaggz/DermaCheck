@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ConsentStatus, ImageAsset, SkinAnalysisResult, User } from '../types';
+import { clearPersistedSession, loadPersistedSession, savePersistedSession } from '../services/sessionStorage';
 
 const DEFAULT_CONSENT: ConsentStatus = {
   accepted: false,
@@ -8,6 +9,7 @@ const DEFAULT_CONSENT: ConsentStatus = {
 };
 
 type AppContextValue = {
+  hydrated: boolean;
   user: User | null;
   setUser: (user: User | null) => void;
   consent: ConsentStatus;
@@ -22,10 +24,40 @@ type AppContextValue = {
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [hydrated, setHydrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [consent, setConsent] = useState<ConsentStatus>(DEFAULT_CONSENT);
   const [pendingImage, setPendingImage] = useState<ImageAsset | null>(null);
   const [lastAnalysis, setLastAnalysis] = useState<SkinAnalysisResult | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { user: u, consent: c } = await loadPersistedSession();
+      if (cancelled) return;
+      if (u) {
+        setUser(u);
+        setConsent(c ?? DEFAULT_CONSENT);
+      } else if (c) {
+        setConsent(c);
+      }
+      setHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    (async () => {
+      if (user) {
+        await savePersistedSession(user, consent);
+      } else {
+        await clearPersistedSession();
+      }
+    })();
+  }, [hydrated, user, consent]);
 
   const resetSession = useCallback(() => {
     setUser(null);
@@ -36,6 +68,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
+      hydrated,
       user,
       setUser,
       consent,
@@ -46,7 +79,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLastAnalysis,
       resetSession,
     }),
-    [user, consent, pendingImage, lastAnalysis, resetSession],
+    [hydrated, user, consent, pendingImage, lastAnalysis, resetSession],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
