@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Home: undefined;
   LegalAcceptances: undefined;
   ImagePicker: undefined;
+  FaceCamera: undefined;
   Preview: undefined;
   Processing: undefined;
   Results: undefined;
