@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { colors } from '../theme';
 import { ConsentScreen } from '../screens/ConsentScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { FaceCameraScreen } from '../screens/FaceCameraScreen';
 import { ImagePickerScreen } from '../screens/ImagePickerScreen';
 import { LegalAcceptancesScreen } from '../screens/LegalAcceptancesScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -44,6 +45,11 @@ export function AppNavigator() {
           name="ImagePicker"
           component={ImagePickerScreen}
           options={{ title: 'Nuevo análisis' }}
+        />
+        <Stack.Screen
+          name="FaceCamera"
+          component={FaceCameraScreen}
+          options={{ title: 'Captura facial', headerShown: false }}
         />
         <Stack.Screen name="Preview" component={PreviewScreen} options={{ title: 'Vista previa' }} />
         <Stack.Screen name="Processing" component={ProcessingScreen} options={{ headerShown: false }} />

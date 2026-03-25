@@ -34,35 +34,23 @@ export function ImagePickerScreen({ navigation }: Props) {
     navigation.navigate('Preview');
   }
 
-  async function takePhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permiso necesario', 'Activa la cámara en ajustes del dispositivo.');
-      return;
-    }
-    const res = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.85,
-    });
-    if (res.canceled || !res.assets?.[0]) return;
-    const a = res.assets[0];
-    setPendingImage({
-      uri: a.uri,
-      width: a.width,
-      height: a.height,
-      source: 'camera',
-    });
-    navigation.navigate('Preview');
+  function openInAppCamera() {
+    navigation.navigate('FaceCamera');
   }
 
   return (
     <ScreenContainer scroll>
       <Text style={styles.lead}>
-        Coloca el rostro centrado y con buena luz. Esta demo no valida calidad de imagen; en el Sprint 2 podremos reforzar esa capa.
+        Para la demo, la cámara integrada muestra una guía para centrar el rostro. Tras capturar, podrás revisar la foto y
+        confirmar antes del análisis.
       </Text>
+      <View style={styles.tips}>
+        <Text style={styles.tipItem}>• Centra el rostro en el óvalo y mira de frente.</Text>
+        <Text style={styles.tipItem}>• Luz uniforme de frente; evita contraluz fuerte.</Text>
+        <Text style={styles.tipItem}>• Tras la foto, validamos luz y encuadre de forma básica.</Text>
+      </View>
       <View style={styles.actions}>
-        <PrimaryButton label="Tomar foto" onPress={takePhoto} />
+        <PrimaryButton label="Abrir cámara con guía" onPress={openInAppCamera} />
         <PrimaryButton
           label="Elegir de la galería"
           variant="secondary"
@@ -78,8 +66,23 @@ const styles = StyleSheet.create({
   lead: {
     ...typography.body,
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
     lineHeight: 24,
+  },
+  tips: {
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  tipItem: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: spacing.xs,
   },
   actions: {
     gap: spacing.sm,

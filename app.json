@@ -23,15 +23,18 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       [
         "expo-image-picker",
         {
           "photosPermission": "DermaCheck necesita acceso a tu galería para analizar una foto de tu rostro.",
           "cameraPermission": "DermaCheck necesita la cámara para capturar una foto de tu rostro con fines de análisis preliminar."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "DermaCheck usa la cámara para mostrarte una guía y capturar tu rostro con fines de análisis preliminar de demostración."
         }
       ]
     ]
