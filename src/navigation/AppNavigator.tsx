@@ -4,6 +4,7 @@ import { colors } from '../theme';
 import { ConsentScreen } from '../screens/ConsentScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ImagePickerScreen } from '../screens/ImagePickerScreen';
+import { LegalAcceptancesScreen } from '../screens/LegalAcceptancesScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { PreviewScreen } from '../screens/PreviewScreen';
 import { ProcessingScreen } from '../screens/ProcessingScreen';
@@ -34,6 +35,11 @@ export function AppNavigator() {
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Crear cuenta' }} />
         <Stack.Screen name="Consent" component={ConsentScreen} options={{ title: 'Consentimiento' }} />
         <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio', headerBackVisible: false }} />
+        <Stack.Screen
+          name="LegalAcceptances"
+          component={LegalAcceptancesScreen}
+          options={{ title: 'Documentos aceptados' }}
+        />
         <Stack.Screen
           name="ImagePicker"
           component={ImagePickerScreen}

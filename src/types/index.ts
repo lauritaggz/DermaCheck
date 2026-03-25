@@ -55,11 +55,24 @@ export interface SkinAnalysisResult {
   imageUri?: string;
 }
 
+/** Fila devuelta por el backend (#116) o reconstruida en modo local. */
+export interface DocumentAcceptanceRecord {
+  documentSlug: string;
+  title: string;
+  versionAccepted: string;
+  acceptedAt: string;
+  status: string;
+}
+
 export interface ConsentStatus {
   accepted: boolean;
   acceptedAt: string | null;
-  /** Versión del texto de consentimiento aceptado */
+  /** Versión agregada de la demo (alineada con catálogo legal). */
   policyVersion: string;
+  /** Registros por documento aceptado (consentimiento, privacidad, etc.). */
+  acceptances?: DocumentAcceptanceRecord[];
+  /** Última sincronización con API (ISO), si aplica. */
+  lastSyncedAt?: string | null;
 }
 
 export interface ImageAsset {
