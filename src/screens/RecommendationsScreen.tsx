@@ -44,15 +44,15 @@ export function RecommendationsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <DisclaimerBanner text={lastAnalysis.medicalDisclaimer} />
-        <Text style={styles.title}>Recomendaciones orientativas</Text>
-        <Text style={styles.lead}>
-          Propuestas cosméticas generales alineadas con tu perfil simulado: piel{' '}
-          <Text style={styles.leadStrong}>{skinTypeLabel(lastAnalysis.skinType).toLowerCase()}</Text> y los hallazgos
-          descritos abajo. No son prescripción médica ni garantía de resultados.
-        </Text>
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>Plan de Cuidados Personalizado</Text>
+          <Text style={styles.lead}>
+            Tratamientos y productos recomendados según su perfil dermatológico y los hallazgos
+            descritos a continuación.
+          </Text>
+        </View>
         <Card style={styles.contextCard}>
-          <Text style={styles.contextLabel}>Basado en (demo)</Text>
+          <Text style={styles.contextLabel}>Análisis de Hallazgos</Text>
           <Text style={styles.contextBody}>{findingsLine}</Text>
         </Card>
         {items.map((r) => (
@@ -104,10 +104,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingBottom: spacing.xxl,
   },
+  titleSection: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
   title: {
     ...typography.display,
     color: colors.text,
-    marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   lead: {

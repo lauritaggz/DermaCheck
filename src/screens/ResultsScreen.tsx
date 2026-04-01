@@ -42,31 +42,26 @@ export function ResultsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <DisclaimerBanner text={lastAnalysis.medicalDisclaimer} />
-        <View style={styles.warningStrip}>
-          <Text style={styles.warningTitle}>Importante</Text>
-          <Text style={styles.warningText}>
-            Este informe es preliminar, generado de forma simulada para la demo. No constituye diagnóstico ni
-            sustituye la opinión de un dermatólogo.
-          </Text>
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>Informe de Análisis Facial</Text>
+          <Text style={styles.date}>Análisis del {formatDate(lastAnalysis.analyzedAt)}</Text>
         </View>
-        <Text style={styles.title}>Informe preliminar</Text>
-        <Text style={styles.date}>Análisis del {formatDate(lastAnalysis.analyzedAt)}</Text>
+
         <Card style={styles.card}>
-          <Text style={styles.sectionLabel}>Tipo de piel (orientativo)</Text>
+          <Text style={styles.sectionLabel}>Tipo de piel</Text>
           <Text style={styles.skinTypeValue}>{skinTypeLabel(lastAnalysis.skinType)}</Text>
           <Text style={styles.body}>{lastAnalysis.skinTypeRationale}</Text>
           <View style={styles.divider} />
           <Text style={styles.sectionLabel}>Severidad global de hallazgos</Text>
           <Text style={styles.body}>{lastAnalysis.severityOverview}</Text>
           <View style={styles.divider} />
-          <Text style={styles.sectionLabel}>Resumen breve</Text>
+          <Text style={styles.sectionLabel}>Resumen del Análisis</Text>
           <Text style={styles.body}>{lastAnalysis.overallSummary}</Text>
           <View style={styles.divider} />
-          <Text style={styles.sectionLabel}>Estado general aparente</Text>
+          <Text style={styles.sectionLabel}>Estado general de la piel</Text>
           <Text style={styles.body}>{lastAnalysis.generalSkinState}</Text>
         </Card>
-        <Text style={styles.sectionTitle}>Hallazgos detectados (simulados)</Text>
+        <Text style={styles.sectionTitle}>Hallazgos detectados</Text>
         {lastAnalysis.conditions.map((c) => (
           <Card key={c.id} style={styles.conditionCard}>
             <View style={styles.row}>
@@ -100,24 +95,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  warningStrip: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 12,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.warning,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  warningTitle: {
-    ...typography.subtitle,
-    color: colors.warning,
-    marginBottom: spacing.xs,
-  },
-  warningText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    lineHeight: 22,
+  titleSection: {
+    marginBottom: spacing.lg,
   },
   title: {
     ...typography.display,

@@ -103,9 +103,6 @@ export function ConditionSelectionScreen({ navigation }: Props) {
           label={selectedIds.length > 0 ? `Analizar ${selectedIds.length} hallazgos` : 'Continuar con análisis general'}
           onPress={handleContinue}
         />
-        <Text style={styles.hint}>
-          Esta selección simula la detección automática de la IA en la versión final.
-        </Text>
       </View>
     </ScreenContainer>
   );

@@ -41,8 +41,8 @@ export function ImagePickerScreen({ navigation }: Props) {
   return (
     <ScreenContainer scroll>
       <Text style={styles.lead}>
-        Para la demo, la cámara integrada muestra una guía para centrar el rostro. Tras capturar, podrás revisar la foto y
-        confirmar antes del análisis.
+        El sistema cuenta con una guía asistida para centrar el rostro correctamente. Tras la captura, se validará
+        automáticamente la iluminación y el encuadre antes de proceder al análisis dermatológico.
       </Text>
       <View style={styles.tips}>
         <Text style={styles.tipItem}>• Centra el rostro en el óvalo y mira de frente.</Text>

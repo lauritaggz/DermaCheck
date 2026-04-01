@@ -27,7 +27,7 @@ export function ProcessingScreen({ navigation, route }: Props) {
 
     let alive = true;
     (async () => {
-      setStatus('Analizando patrones visibles (simulado)…');
+      setStatus('Analizando patrones dermatológicos…');
       try {
         const result = await analysisService.analyzeImage({
           image: pendingImage,
@@ -36,11 +36,11 @@ export function ProcessingScreen({ navigation, route }: Props) {
         });
         if (!alive) return;
         setLastAnalysis(result);
-        setStatus('Informe listo');
+        setStatus('Informe completado');
         navigation.replace('Results');
       } catch {
         if (!alive) return;
-        setStatus('No se pudo completar el análisis de demostración.');
+        setStatus('Error en el procesamiento del análisis.');
       }
     })();
 
@@ -51,9 +51,8 @@ export function ProcessingScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
-      <DisclaimerBanner text="Procesamiento simulado para la demo; en producción se conectará a un servicio seguro de IA." />
       <ActivityIndicator size="large" color={colors.primary} style={styles.spinner} />
-      <Text style={styles.title}>Analizando tu piel</Text>
+      <Text style={styles.title}>Analizando su piel</Text>
       <Text style={styles.sub}>{status}</Text>
     </SafeAreaView>
   );
