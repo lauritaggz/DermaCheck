@@ -10,10 +10,12 @@ import { colors, spacing, typography } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Processing'>;
 
-export function ProcessingScreen({ navigation }: Props) {
+export function ProcessingScreen({ navigation, route }: Props) {
   const { pendingImage, user, setLastAnalysis } = useAppState();
   const [status, setStatus] = useState('Preparando imagen…');
   const ran = useRef(false);
+
+  const { selectedConditionIds } = route.params;
 
   useEffect(() => {
     if (!pendingImage || !user) {
@@ -30,6 +32,7 @@ export function ProcessingScreen({ navigation }: Props) {
         const result = await analysisService.analyzeImage({
           image: pendingImage,
           userId: user.id,
+          selectedConditionIds,
         });
         if (!alive) return;
         setLastAnalysis(result);
@@ -44,7 +47,7 @@ export function ProcessingScreen({ navigation }: Props) {
     return () => {
       alive = false;
     };
-  }, [navigation, pendingImage, setLastAnalysis, user]);
+  }, [navigation, pendingImage, setLastAnalysis, user, selectedConditionIds]);
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>

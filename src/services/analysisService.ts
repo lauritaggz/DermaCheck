@@ -76,12 +76,14 @@ export const analysisService = {
   async analyzeImage(params: {
     image: ImageAsset;
     userId: string;
+    selectedConditionIds?: string[];
   }): Promise<SkinAnalysisResult> {
     await uploadFaceImageForAnalysis(params.image, params.userId);
     await delay(MOCK_PROCESS_MS);
     return buildMockAnalysisResult({
       userId: params.userId,
       imageUri: params.image.uri,
+      selectedConditionIds: params.selectedConditionIds,
     });
   },
 };

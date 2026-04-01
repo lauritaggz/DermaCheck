@@ -48,7 +48,7 @@ export function PreviewScreen({ navigation }: Props) {
   }, [navigation, pendingImage?.source, setPendingImage]);
 
   const handleConfirm = useCallback(() => {
-    navigation.navigate('Processing');
+    navigation.navigate('ConditionSelection');
   }, [navigation]);
 
   const handleForceContinue = useCallback(() => {
@@ -139,7 +139,7 @@ export function PreviewScreen({ navigation }: Props) {
         style={styles.gapSm}
         onPress={() => {
           setPendingImage(null);
-          navigation.replace('ImagePicker');
+          navigation.replace('ConditionSelection');
         }}
         disabled={validating}
       />
