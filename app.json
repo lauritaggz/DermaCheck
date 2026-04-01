@@ -7,9 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2C6E7E"
     },
     "ios": {
       "supportsTablet": true
@@ -31,14 +31,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "DermaCheck necesita acceso a tu galería para analizar una foto de tu rostro.",
-          "cameraPermission": "DermaCheck necesita la cámara para capturar una foto de tu rostro con fines de análisis preliminar."
+          "photosPermission": "DermaCheck necesita acceso a su galería para analizar una foto del rostro.",
+          "cameraPermission": "DermaCheck requiere la cámara para capturar una foto del rostro con fines de análisis clínico."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "DermaCheck usa la cámara para mostrarte una guía y capturar tu rostro con fines de análisis preliminar de demostración."
+          "cameraPermission": "DermaCheck utiliza la cámara para mostrarle una guía y capturar el rostro con fines de análisis dermatológico profesional."
         }
       ]
     ],

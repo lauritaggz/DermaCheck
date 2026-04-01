@@ -5,12 +5,18 @@ import { colors, spacing } from '../theme';
 type Props = ViewProps & {
   scroll?: boolean;
   children: React.ReactNode;
+  backgroundColor?: string;
 };
 
-export function ScreenContainer({ scroll, children, style, ...rest }: Props) {
+export function ScreenContainer({ scroll, children, style, backgroundColor, ...rest }: Props) {
+  const containerStyle = [
+    styles.safe,
+    backgroundColor ? { backgroundColor } : null,
+  ];
+
   if (scroll) {
     return (
-      <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={containerStyle} edges={['left', 'right', 'bottom']}>
         <ScrollView
           contentContainerStyle={[styles.scrollContent, style]}
           keyboardShouldPersistTaps="handled"
@@ -24,7 +30,7 @@ export function ScreenContainer({ scroll, children, style, ...rest }: Props) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, styles.flex, style]} edges={['left', 'right', 'bottom']} {...rest}>
+    <SafeAreaView style={[containerStyle, styles.flex, style]} edges={['left', 'right', 'bottom']} {...rest}>
       <View style={styles.flex}>{children}</View>
     </SafeAreaView>
   );

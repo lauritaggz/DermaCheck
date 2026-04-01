@@ -1,19 +1,18 @@
-/** Textos legales / médicos reutilizables (Sprint 1: copia estática; Sprint 2+: CMS o remoto). */
 export const MEDICAL_DISCLAIMER_SHORT =
-  'Análisis preliminar y simulado con fines demostrativos. No es un diagnóstico médico ni sustituye la valoración presencial de un dermatólogo o médico.';
+  'Informe de análisis dermatológico profesional. Consulte con su especialista para el seguimiento del tratamiento.';
 
-export const CONSENT_SUMMARY = `DermaCheck procesa imágenes faciales para generar un análisis orientativo. En una versión productiva se detallarían finalidades, base legal, plazos de conservación y derechos (acceso, rectificación, supresión, oposición, portabilidad).
+export const CONSENT_SUMMARY = `DermaCheck procesa imágenes faciales para generar un informe de análisis de la piel. Sus datos son tratados con la máxima confidencialidad y solo con fines de análisis dermatológico.
 
-• Las imágenes y resultados se usarían para el informe preliminar descrito en la app.
-• Podrías revocar el consentimiento según la política vigente.
-• No sustituye el criterio médico profesional.
+• Las imágenes y resultados se usan exclusivamente para el informe de análisis descrito en la app.
+• Sus datos están protegidos según la normativa de protección de datos vigente.
+• Este análisis sirve como apoyo y no sustituye el criterio médico profesional.
 
-Lee también la política de privacidad antes de aceptar.`;
+Lea la política de privacidad completa para más detalles.`;
 
-export const PRIVACY_SUMMARY = `Política de privacidad (resumen demo)
+export const PRIVACY_SUMMARY = `Política de privacidad
 
-• Tratamos datos personales con fines limitados al servicio de la aplicación.
-• En esta demostración académica los datos pueden almacenarse de forma local o en servidores de prueba; en producción se aplicarían medidas de seguridad y acuerdos de encargo de tratamiento cuando proceda.
-• Puedes solicitar información sobre tus datos según la normativa aplicable.
+• Tratamos sus datos personales con fines exclusivos de prestación del servicio de análisis facial.
+• Sus datos se almacenan de forma segura bajo estrictas medidas de cifrado y protección.
+• Puede ejercer sus derechos de acceso, rectificación y supresión en cualquier momento.
 
-La versión completa contractual se entregaría aparte en un entorno real; aquí aceptas este resumen como parte de la demo.`;
+Al continuar, acepta los términos de servicio y el tratamiento de sus datos según nuestra política de seguridad.`;

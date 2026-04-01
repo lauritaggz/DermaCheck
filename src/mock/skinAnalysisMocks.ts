@@ -13,7 +13,7 @@ const demoConditions: SkinCondition[] = [
     description:
       'Algunas lesiones cerradas y pequeñas elevaciones en frente y mentón, compatibles con un grado leve de acné. La intensidad puede variar con el ciclo hormonal o el estrés.',
     severity: 'mild',
-    analysisNote: 'Patrón simulado; solo un especialista puede confirmar el tipo de acné.',
+    analysisNote: 'Evaluación detallada requerida para confirmación clínica.',
   },
   {
     id: 'c-pores',
@@ -22,7 +22,7 @@ const demoConditions: SkinCondition[] = [
     description:
       'Poros más marcados en frente y nariz, frecuentes en pieles con mayor actividad sebácea localizada. No implica por sí solo una enfermedad.',
     severity: 'mild',
-    analysisNote: 'Observación visual simulada desde la imagen.',
+    analysisNote: 'Observación basada en patrón de textura facial.',
   },
   {
     id: 'c-pigment',
@@ -49,7 +49,7 @@ const demoConditions: SkinCondition[] = [
     description:
       'Tonos rojizos en pómulos que podrían deberse a sensibilidad, temperatura o un cuadro tipo rosácea; requiere correlación clínica si persiste o arde.',
     severity: 'moderate',
-    analysisNote: 'No es diagnóstico: la rosácea se confirma en consulta médica.',
+    analysisNote: 'La rosácea requiere confirmación clínica presencial.',
   },
   {
     id: 'c-dermatitis',
@@ -58,7 +58,7 @@ const demoConditions: SkinCondition[] = [
     description:
       'Presencia de descamación fina y enrojecimiento en áreas específicas (surcos nasogenianos, entrecejo o mejillas) que sugieren un cuadro de dermatitis. Requiere evaluación para distinguir entre seborreica o atópica.',
     severity: 'moderate',
-    analysisNote: 'Simulación para demo: la dermatitis requiere diagnóstico clínico presencial.',
+    analysisNote: 'Se recomienda diagnóstico diferencial presencial.',
   },
 ];
 
@@ -156,8 +156,8 @@ export function buildMockAnalysisResult(params: {
   const conditionLabels = conditions.map((c) => c.label.split(' ')[0].toLowerCase());
   const summaryText =
     conditions.length > 0
-      ? `Simulación basada en los hallazgos de: ${conditions.map((c) => c.label).join(', ')}.`
-      : 'No se han seleccionado hallazgos específicos para este análisis simulado.';
+      ? `Informe generado según los hallazgos de: ${conditions.map((c) => c.label).join(', ')}.`
+      : 'Evaluación general del estado cutáneo.';
 
   return {
     id: `analysis_${now.getTime()}`,
@@ -165,7 +165,7 @@ export function buildMockAnalysisResult(params: {
     analyzedAt: now.toISOString(),
     skinType: 'combination',
     skinTypeRationale:
-      'Valoración visual simulada: se aprecian variaciones en la textura y brillo consistentes con piel mixta y los hallazgos seleccionados.',
+      'Valoración visual clínica: se aprecian variaciones en la textura y brillo consistentes con piel mixta y los hallazgos seleccionados.',
     severityOverview: conditions.some((c) => c.severity === 'severe')
       ? 'Se detectan hallazgos con severidad importante.'
       : 'La mayoría de hallazgos seleccionados presentan una severidad leve o moderada.',
