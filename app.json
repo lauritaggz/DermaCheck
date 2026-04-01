@@ -21,7 +21,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
+      ],
+      "package": "com.jrvera.dermacheck"
     },
     "plugins": [
       [
@@ -37,6 +41,11 @@
           "cameraPermission": "DermaCheck usa la cámara para mostrarte una guía y capturar tu rostro con fines de análisis preliminar de demostración."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0b4fc410-db6f-4840-888f-cfe21b6e71f8"
+      }
+    }
   }
 }
