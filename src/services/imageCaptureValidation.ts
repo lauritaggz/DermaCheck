@@ -1,5 +1,5 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { decode, type RawImageData } from 'jpeg-js';
 
 /** Códigos internos para priorizar mensajes en UI. */
