@@ -1,0 +1,12 @@
+venv
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+.env
+.env.*
+*.db
+.git
+uploads
+.pytest_cache
+*.md

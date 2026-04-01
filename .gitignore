@@ -34,6 +34,13 @@ yarn-error.*
 .env
 .env*.local
 backend/.env
+deploy/production/.env
+deploy/production/.env.*
+# Datos de MySQL y archivos subidos (persistidos bajo deploy/production/data/)
+deploy/production/data/mysql/*
+!deploy/production/data/mysql/.gitkeep
+deploy/production/data/uploads/*
+!deploy/production/data/uploads/.gitkeep
 backend/dermacheck.db
 backend/*.db
 backend/venv/
