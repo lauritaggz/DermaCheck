@@ -8,6 +8,7 @@ import { ImagePickerScreen } from '../screens/ImagePickerScreen';
 import { LegalAcceptancesScreen } from '../screens/LegalAcceptancesScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { PreviewScreen } from '../screens/PreviewScreen';
+import { ConditionSelectionScreen } from '../screens/ConditionSelectionScreen';
 import { ProcessingScreen } from '../screens/ProcessingScreen';
 import { RecommendationsScreen } from '../screens/RecommendationsScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -52,6 +53,11 @@ export function AppNavigator() {
           options={{ title: 'Captura facial', headerShown: false }}
         />
         <Stack.Screen name="Preview" component={PreviewScreen} options={{ title: 'Vista previa' }} />
+        <Stack.Screen
+          name="ConditionSelection"
+          component={ConditionSelectionScreen}
+          options={{ title: 'Diagnóstico manual' }}
+        />
         <Stack.Screen name="Processing" component={ProcessingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Informe preliminar' }} />
         <Stack.Screen

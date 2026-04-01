@@ -11,7 +11,8 @@ export type RootStackParamList = {
   ImagePicker: undefined;
   FaceCamera: undefined;
   Preview: undefined;
-  Processing: undefined;
+  ConditionSelection: undefined;
+  Processing: { selectedConditionIds: string[] };
   Results: undefined;
   Recommendations: undefined;
 };

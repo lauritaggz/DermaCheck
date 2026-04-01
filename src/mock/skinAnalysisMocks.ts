@@ -51,6 +51,15 @@ const demoConditions: SkinCondition[] = [
     severity: 'moderate',
     analysisNote: 'No es diagnóstico: la rosácea se confirma en consulta médica.',
   },
+  {
+    id: 'c-dermatitis',
+    key: 'dermatitis',
+    label: 'Dermatitis (Signos compatibles)',
+    description:
+      'Presencia de descamación fina y enrojecimiento en áreas específicas (surcos nasogenianos, entrecejo o mejillas) que sugieren un cuadro de dermatitis. Requiere evaluación para distinguir entre seborreica o atópica.',
+    severity: 'moderate',
+    analysisNote: 'Simulación para demo: la dermatitis requiere diagnóstico clínico presencial.',
+  },
 ];
 
 const demoRecommendations: Recommendation[] = [
@@ -70,7 +79,7 @@ const demoRecommendations: Recommendation[] = [
     body:
       'Aunque la zona T luzca más brillante, las mejillas suelen agradecer humectación ligera para mantener la barrera. Texturas en gel-cream o lociones suelen encajar bien en perfiles mixtos similares al tuyo (orientación general, no prescripción).',
     category: 'routine',
-    relatedConditionKeys: ['enlarged_pores', 'expression_lines', 'rosacea'],
+    relatedConditionKeys: ['enlarged_pores', 'expression_lines', 'rosacea', 'dermatitis'],
     suggestedIngredients: ['ácido hialurónico', 'ceramidas', 'pantenol'],
     suggestedProductTypes: ['hidratante ligera', 'crema reparadora'],
   },
@@ -90,7 +99,7 @@ const demoRecommendations: Recommendation[] = [
     body:
       'La exposición solar puede intensificar manchas y enrojecimiento. Un protector de amplio espectro ayuda a mantener los resultados de cualquier rutina y a prevenir fotoenvejecimiento.',
     category: 'sun',
-    relatedConditionKeys: ['hyperpigmentation', 'expression_lines', 'rosacea'],
+    relatedConditionKeys: ['hyperpigmentation', 'expression_lines', 'rosacea', 'dermatitis'],
     suggestedIngredients: ['protector solar SPF 50+'],
     suggestedProductTypes: ['protector solar de uso diario'],
   },
@@ -100,7 +109,7 @@ const demoRecommendations: Recommendation[] = [
     body:
       'Si el enrojecimiento arde, hay pústulas dolorosas, la sensación es muy sensible o las lesiones cambian rápido, es razonable una valoración presencial. Esta app no puede descartar ni confirmar enfermedades.',
     category: 'professional',
-    relatedConditionKeys: ['rosacea', 'acne'],
+    relatedConditionKeys: ['rosacea', 'acne', 'dermatitis'],
     suggestedIngredients: ['protector solar SPF 50+'],
     suggestedProductTypes: ['protector solar de uso diario'],
   },
@@ -110,31 +119,60 @@ const demoRecommendations: Recommendation[] = [
     body:
       'Descanso regular, hidratación oral y gestionar el estrés ayudan al aspecto general de la piel. Evita frotar toallas sobre el rostro y limpia fundas de almohada con frecuencia si hay brotes leves.',
     category: 'lifestyle',
-    relatedConditionKeys: ['acne'],
+    relatedConditionKeys: ['acne', 'dermatitis'],
     suggestedIngredients: ['pantenol'],
     suggestedProductTypes: ['limpiador suave'],
+  },
+  {
+    id: 'r-dermatitis-care',
+    title: 'Cuidado específico para zonas con dermatitis',
+    body:
+      'Evita productos con alcohol o fragancias fuertes en las zonas irritadas. El uso de syndets (limpiadores sin jabón) y cremas con principios activos calmantes ayuda a restaurar la barrera cutánea sin agredir.',
+    category: 'routine',
+    relatedConditionKeys: ['dermatitis'],
+    suggestedIngredients: ['pantenol', 'avena coloidal', 'ceramidas'],
+    suggestedProductTypes: ['limpiador syndet', 'crema calmante para rostro'],
   },
 ];
 
 export function buildMockAnalysisResult(params: {
   userId: string;
   imageUri?: string;
+  selectedConditionIds?: string[];
 }): SkinAnalysisResult {
   const now = new Date();
+
+  // Si hay seleccionados, filtramos el catálogo. Si no, usamos un set por defecto para la demo.
+  const conditions =
+    params.selectedConditionIds && params.selectedConditionIds.length > 0
+      ? demoConditions.filter((c) => params.selectedConditionIds?.includes(c.id))
+      : [demoConditions[1], demoConditions[2]]; // Por defecto Poros y Manchas si no hay selección
+
+  const conditionKeys = conditions.map((c) => c.key);
+  const recommendations = demoRecommendations.filter((r) =>
+    r.relatedConditionKeys?.some((rk) => conditionKeys.includes(rk)),
+  );
+
+  const conditionLabels = conditions.map((c) => c.label.split(' ')[0].toLowerCase());
+  const summaryText =
+    conditions.length > 0
+      ? `Simulación basada en los hallazgos de: ${conditions.map((c) => c.label).join(', ')}.`
+      : 'No se han seleccionado hallazgos específicos para este análisis simulado.';
+
   return {
     id: `analysis_${now.getTime()}`,
     userId: params.userId,
     analyzedAt: now.toISOString(),
     skinType: 'combination',
     skinTypeRationale:
-      'En la imagen se aprecia algo más de brillo en frente y nariz, con mejillas relativamente más mate: patrón compatible con piel mixta en una valoración visual simulada (no sustituye una clasificación profesional).',
-    severityOverview:
-      'La mayoría de hallazgos son leves; la hiperpigmentación focal y el enrojecimiento difuso se marcan como moderados y merecen observación sin interpretarse como urgencia.',
-    overallSummary:
-      'Perfil compatible con piel mixta y buen estado general de la barrera, con acné leve localizado, poros visibles en zona T, manchas residuales suaves, líneas de expresión finas y rubor leve en pómulos. Todo el conjunto es coherente con un seguimiento cosmético prudente y consulta médica si aparecen síntomas molestos.',
-    generalSkinState: 'Hidratación aparentemente adecuada en mejillas; zona T con mayor actividad sebácea visible.',
-    conditions: demoConditions,
-    recommendations: demoRecommendations,
+      'Valoración visual simulada: se aprecian variaciones en la textura y brillo consistentes con piel mixta y los hallazgos seleccionados.',
+    severityOverview: conditions.some((c) => c.severity === 'severe')
+      ? 'Se detectan hallazgos con severidad importante.'
+      : 'La mayoría de hallazgos seleccionados presentan una severidad leve o moderada.',
+    overallSummary: summaryText,
+    generalSkinState: 'Estado compatible con seguimiento cosmético y observación de las áreas seleccionadas.',
+    conditions,
+    recommendations,
     medicalDisclaimer: MEDICAL_DISCLAIMER_SHORT,
     imageUri: params.imageUri,
   };
