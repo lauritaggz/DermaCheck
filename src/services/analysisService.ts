@@ -2,6 +2,7 @@ import { apiUrl } from '../config/api';
 import { buildMockAnalysisResult } from '../mock';
 import type { ImageAsset, SkinAnalysisResult } from '../types';
 import { delay } from '../utils/delay';
+import { formatApiNetworkError } from '../utils/networkErrors';
 
 const MOCK_PROCESS_MS = 2200;
 
@@ -60,7 +61,7 @@ export async function uploadFaceImageForAnalysis(
       message: text ? text.slice(0, 200) : undefined,
     };
   } catch {
-    return { ok: false, skipped: false, message: 'network_error' };
+    return { ok: false, skipped: false, message: formatApiNetworkError() };
   }
 }
 

@@ -138,6 +138,29 @@ Comprueba en el navegador del PC:
 
 **Importante:** `--host 0.0.0.0` hace que el móvil en la WiFi pueda llamar por IP a tu PC.
 
+### Alternativa: API con Docker Compose
+
+Desde la **raíz del repo** (junto a `docker-compose.yml`):
+
+**MySQL + API** (similar a un despliegue con servidor de base de datos):
+
+```bash
+docker compose up --build -d
+```
+
+**Solo API + SQLite** (un contenedor, sin MySQL):
+
+```bash
+docker compose -f docker-compose.sqlite.yml up --build -d
+```
+
+- Por defecto el API Docker se publica en el puerto **8002** de tu PC (mapeo `8002` → `8000` en el contenedor), para no chocar con stacks que ya usen **8000** u **8001** en el host. Salud: `http://127.0.0.1:8002/health` · Swagger: `http://127.0.0.1:8002/docs`. Otro puerto: `$env:API_HOST_PORT=9000; docker compose up -d`.  
+- En el **móvil**, `EXPO_PUBLIC_API_BASE_URL` debe usar ese puerto, p. ej. `http://192.168.0.15:8002`, no `localhost`.  
+- Las credenciales MySQL del `docker-compose.yml` son de **demo**; cámbialas antes de exponer el stack a Internet. Los datos y las subidas de cara persisten en **volúmenes** Docker (`mysql_data` o `sqlite_data`, y `face_uploads`).  
+- Logs: `docker compose logs -f api` · Parar: `docker compose down`
+
+**Despliegue en servidor (Ubuntu, curso / producción):** carpeta [`deploy/production/`](deploy/production/README.md) (VPN, SSH, `docker-compose.prod.yml`, variables en `.env` solo en el servidor).
+
 ### Paso 4 — IP del PC para el móvil
 
 En **Windows**, en PowerShell:

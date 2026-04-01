@@ -2,6 +2,7 @@ import { LEGAL_DOCUMENTS, LEGAL_DOC_VERSION } from '../constants/legalDocuments'
 import { apiUrl, getApiBaseUrl } from '../config/api';
 import type { ConsentStatus, DocumentAcceptanceRecord } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
+import { formatApiNetworkError } from '../utils/networkErrors';
 import { delay } from '../utils/delay';
 
 const MOCK_LATENCY_MS = 400;
@@ -71,17 +72,22 @@ export const consentService = {
     }
 
     const url = apiUrl(`${API_V1}/consents/accept`);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        items: [
-          { slug: LEGAL_DOCUMENTS.consent_informed.slug, version: LEGAL_DOCUMENTS.consent_informed.version },
-          { slug: LEGAL_DOCUMENTS.privacy_policy.slug, version: LEGAL_DOCUMENTS.privacy_policy.version },
-        ],
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          items: [
+            { slug: LEGAL_DOCUMENTS.consent_informed.slug, version: LEGAL_DOCUMENTS.consent_informed.version },
+            { slug: LEGAL_DOCUMENTS.privacy_policy.slug, version: LEGAL_DOCUMENTS.privacy_policy.version },
+          ],
+        }),
+      });
+    } catch {
+      throw new Error(formatApiNetworkError());
+    }
 
     if (!res.ok) {
       throw new Error(await parseApiErrorMessage(res));
@@ -107,7 +113,12 @@ export const consentService = {
       return [];
     }
     const url = apiUrl(`${API_V1}/consents/users/${encodeURIComponent(userId)}/acceptances`);
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    let res: Response;
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/json' } });
+    } catch {
+      throw new Error(formatApiNetworkError());
+    }
     if (!res.ok) {
       throw new Error(await parseApiErrorMessage(res));
     }

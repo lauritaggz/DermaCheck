@@ -1,0 +1,43 @@
+# API + MySQL. Uso: docker compose up --build -d
+# Puerto en tu PC: 8002 por defecto (8000/8001 suelen estar en otros stacks: cstore, mcstore, etc.).
+# Salud: http://localhost:8002/health  |  Otro puerto: API_HOST_PORT=9000 docker compose up -d
+#
+# Cambia MYSQL_* y la contraseña en DATABASE_URL antes de exponer a internet.
+# La app móvil usa EXPO_PUBLIC_API_BASE_URL apuntando a tu dominio o IP (HTTPS en producción).
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dermacheck
+      MYSQL_USER: dermacheck
+      MYSQL_PASSWORD: dermacheck
+      MYSQL_ROOT_PASSWORD: dermacheck_root
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pdermacheck_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_PORT:-8002}:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://dermacheck:dermacheck@db:3306/dermacheck?charset=utf8mb4
+    volumes:
+      - face_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  face_uploads:

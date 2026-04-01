@@ -1,0 +1,22 @@
+# Solo el API con SQLite en volumen (sin MySQL).
+# Uso: docker compose -f docker-compose.sqlite.yml up --build -d
+# Base de datos: volumen sqlite_data → /app/data/dermacheck.db
+# Puerto en tu PC: 8002 por defecto. Otro: $env:API_HOST_PORT=9000
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_PORT:-8002}:8000"
+    environment:
+      DATABASE_URL: sqlite:////app/data/dermacheck.db
+    volumes:
+      - sqlite_data:/app/data
+      - face_uploads:/app/uploads
+
+volumes:
+  sqlite_data:
+  face_uploads:

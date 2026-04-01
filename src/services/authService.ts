@@ -1,6 +1,7 @@
 import { apiUrl, getApiBaseUrl } from '../config/api';
 import type { AuthCredentials, RegisterPayload, User } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
+import { formatApiNetworkError } from '../utils/networkErrors';
 import { delay } from '../utils/delay';
 import {
   addAccount,
@@ -40,37 +41,45 @@ function mapApiAuthPayload(data: { user: ApiAuthUser }): User {
 
 async function loginWithApi(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
   const url = apiUrl(`${API_V1}/auth/login`);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      email: credentials.email.trim().toLowerCase(),
-      password: credentials.password,
-    }),
-  });
-  if (!res.ok) {
-    return { error: await parseApiErrorMessage(res) };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        email: credentials.email.trim().toLowerCase(),
+        password: credentials.password,
+      }),
+    });
+    if (!res.ok) {
+      return { error: await parseApiErrorMessage(res) };
+    }
+    const data = (await res.json()) as { user: ApiAuthUser };
+    return { user: mapApiAuthPayload(data) };
+  } catch {
+    return { error: formatApiNetworkError() };
   }
-  const data = (await res.json()) as { user: ApiAuthUser };
-  return { user: mapApiAuthPayload(data) };
 }
 
 async function registerWithApi(payload: RegisterPayload): Promise<{ user: User } | { error: string }> {
   const url = apiUrl(`${API_V1}/auth/register`);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      email: payload.email.trim().toLowerCase(),
-      password: payload.password,
-      name: payload.name.trim(),
-    }),
-  });
-  if (!res.ok) {
-    return { error: await parseApiErrorMessage(res) };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        email: payload.email.trim().toLowerCase(),
+        password: payload.password,
+        name: payload.name.trim(),
+      }),
+    });
+    if (!res.ok) {
+      return { error: await parseApiErrorMessage(res) };
+    }
+    const data = (await res.json()) as { user: ApiAuthUser };
+    return { user: mapApiAuthPayload(data) };
+  } catch {
+    return { error: formatApiNetworkError() };
   }
-  const data = (await res.json()) as { user: ApiAuthUser };
-  return { user: mapApiAuthPayload(data) };
 }
 
 async function loginMock(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
