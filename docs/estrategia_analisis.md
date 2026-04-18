@@ -48,3 +48,9 @@
 * **Varianza del Dataset:** La precisión final estará estrictamente supeditada a la calidad y equilibrio de las muestras consolidadas en Roboflow.
 * **Condiciones de Captura:** La eficacia de la inferencia podría verse degradada ante capturas con baja iluminación o ruido digital excesivo.
 * **Requerimientos de Cómputo:** El entrenamiento y ajuste del modelo demandará el uso continuo de GPU durante los ciclos de 11 horas definidos.
+
+---
+
+## 7. Contrato de respuesta (tarea 72)
+
+Ejemplo de **formato de respuesta** JSON acordado entre API y app: ver [`respuesta_formato.json`](./respuesta_formato.json) en esta carpeta (`docs/`).
