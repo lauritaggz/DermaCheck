@@ -1,32 +1,11 @@
+import { AUTH_ERRORS } from '../constants/authMessages';
 import { LEGAL_DOCUMENTS, LEGAL_DOC_VERSION } from '../constants/legalDocuments';
 import { apiUrl, getApiBaseUrl } from '../config/api';
 import type { ConsentStatus, DocumentAcceptanceRecord } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
-import { delay } from '../utils/delay';
-
-const MOCK_LATENCY_MS = 400;
 
 const API_V1 = '/api/v1';
-
-function buildLocalAcceptances(nowIso: string): DocumentAcceptanceRecord[] {
-  return [
-    {
-      documentSlug: LEGAL_DOCUMENTS.consent_informed.slug,
-      title: LEGAL_DOCUMENTS.consent_informed.shortTitle,
-      versionAccepted: LEGAL_DOCUMENTS.consent_informed.version,
-      acceptedAt: nowIso,
-      status: 'accepted',
-    },
-    {
-      documentSlug: LEGAL_DOCUMENTS.privacy_policy.slug,
-      title: LEGAL_DOCUMENTS.privacy_policy.shortTitle,
-      versionAccepted: LEGAL_DOCUMENTS.privacy_policy.version,
-      acceptedAt: nowIso,
-      status: 'accepted',
-    },
-  ];
-}
 
 type ApiAcceptanceRow = {
   document_slug: string;
@@ -53,22 +32,11 @@ function latestAcceptanceAt(records: DocumentAcceptanceRecord[]): string | null 
 
 export const consentService = {
   /**
-   * Registra aceptación de todos los documentos requeridos (#115).
-   * Con API: marca de tiempo en servidor. Sin API: demo local.
+   * Registra aceptación de todos los documentos requeridos en el servidor.
    */
   async acceptAllRequiredDocuments(userId: string): Promise<ConsentStatus> {
-    const base = getApiBaseUrl();
-    if (!base) {
-      await delay(MOCK_LATENCY_MS);
-      const now = new Date().toISOString();
-      const acceptances = buildLocalAcceptances(now);
-      return {
-        accepted: true,
-        acceptedAt: latestAcceptanceAt(acceptances),
-        policyVersion: LEGAL_DOC_VERSION,
-        acceptances,
-        lastSyncedAt: null,
-      };
+    if (!getApiBaseUrl()) {
+      throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
     }
 
     const url = apiUrl(`${API_V1}/consents/accept`);
@@ -106,11 +74,10 @@ export const consentService = {
     };
   },
 
-  /** Consulta histórico de aceptaciones (#116). */
+  /** Consulta histórico de aceptaciones en el servidor. */
   async fetchUserAcceptances(userId: string): Promise<DocumentAcceptanceRecord[]> {
     if (!getApiBaseUrl()) {
-      await delay(200);
-      return [];
+      throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
     }
     const url = apiUrl(`${API_V1}/consents/users/${encodeURIComponent(userId)}/acceptances`);
     let res: Response;

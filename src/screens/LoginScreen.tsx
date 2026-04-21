@@ -72,7 +72,7 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <ScreenContainer scroll>
       <Text style={styles.lead}>
-        Inicia sesión con la cuenta que creaste en el registro (demo local en este dispositivo).
+        Inicia sesión con el correo y la contraseña de tu cuenta registrada en el servidor.
       </Text>
       {formError ? <FormMessage message={formError} variant="error" /> : null}
       <TextField

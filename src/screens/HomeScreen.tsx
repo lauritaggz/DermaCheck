@@ -35,11 +35,12 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.logout}>Salir</Text>
         </Pressable>
       </View>
-      <DisclaimerBanner text="Recuerda: los resultados son orientativos y simulados en esta fase del proyecto." />
+      <DisclaimerBanner text="Los hallazgos los genera un modelo de visión en el servidor; son orientativos y no sustituyen el juicio de un profesional de salud." />
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Nuevo análisis facial</Text>
         <Text style={styles.cardBody}>
-          Toma una foto o elige una de tu galería. Te mostraremos un informe preliminar y recomendaciones generales.
+          Toma una foto o elige una de tu galería. El informe se genera con el modelo de detección en el servidor e
+          incluye recomendaciones generales orientativas.
         </Text>
         <PrimaryButton label="Comenzar análisis" onPress={() => navigation.navigate('ImagePicker')} />
       </Card>
@@ -54,6 +55,19 @@ export function HomeScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('LegalAcceptances')}
         />
       </Card>
+      {__DEV__ ? (
+        <Card style={styles.cardSecondary}>
+          <Text style={styles.cardTitle}>Prueba del modelo</Text>
+          <Text style={styles.cardBody}>
+            Sube una imagen y lista las afecciones detectadas por el modelo entrenado (solo desarrollo).
+          </Text>
+          <PrimaryButton
+            label="Abrir prueba rápida"
+            variant="secondary"
+            onPress={() => navigation.navigate('ModelQuickTest')}
+          />
+        </Card>
+      ) : null}
     </ScreenContainer>
   );
 }

@@ -4,7 +4,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckboxRow, DisclaimerBanner, FormMessage, PrimaryButton, ScreenContainer } from '../components';
 import { CONSENT_SUMMARY, PRIVACY_SUMMARY } from '../constants/disclaimers';
 import { LEGAL_DOCUMENTS } from '../constants/legalDocuments';
-import { getApiBaseUrl } from '../config/api';
 import { useAppState } from '../context/AppContext';
 import type { RootStackParamList } from '../navigation/types';
 import { consentService } from '../services';
@@ -64,8 +63,7 @@ export function ConsentScreen({ navigation }: Props) {
       <DisclaimerBanner text="Los análisis de DermaCheck son preliminares y no reemplazan el criterio de un profesional de la salud." />
       <Text style={styles.title}>Consentimiento y privacidad</Text>
       <Text style={styles.meta}>
-        Documentos en versión {LEGAL_DOCUMENTS.consent_informed.version}
-        {getApiBaseUrl() ? ' · registro en servidor' : ' · modo local (sin API)'}
+        Documentos en versión {LEGAL_DOCUMENTS.consent_informed.version} · registro en servidor
       </Text>
 
       {formError ? <FormMessage message={formError} variant="error" /> : null}

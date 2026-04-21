@@ -1,7 +1,7 @@
 /**
  * Debe alinearse con `seed_legal_documents.py` en el backend (slug + version).
  */
-export const LEGAL_DOC_VERSION = '1.0-demo' as const;
+export const LEGAL_DOC_VERSION = '1.0' as const;
 
 export const LEGAL_DOCUMENTS = {
   consent_informed: {

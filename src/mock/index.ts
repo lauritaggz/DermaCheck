@@ -1,1 +1,0 @@
-export { buildMockAnalysisResult } from './skinAnalysisMocks';

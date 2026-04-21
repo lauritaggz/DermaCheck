@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { DisclaimerBanner } from '../components';
+import { PrimaryButton } from '../components';
 import { useAppState } from '../context/AppContext';
 import type { RootStackParamList } from '../navigation/types';
 import { analysisService } from '../services';
@@ -10,12 +10,11 @@ import { colors, spacing, typography } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Processing'>;
 
-export function ProcessingScreen({ navigation, route }: Props) {
+export function ProcessingScreen({ navigation }: Props) {
   const { pendingImage, user, setLastAnalysis } = useAppState();
   const [status, setStatus] = useState('Preparando imagen…');
+  const [failed, setFailed] = useState<string | null>(null);
   const ran = useRef(false);
-
-  const { selectedConditionIds } = route.params;
 
   useEffect(() => {
     if (!pendingImage || !user) {
@@ -27,33 +26,56 @@ export function ProcessingScreen({ navigation, route }: Props) {
 
     let alive = true;
     (async () => {
-      setStatus('Analizando patrones dermatológicos…');
+      setStatus('Enviando imagen al servidor…');
+      const statusTimer = setTimeout(() => {
+        if (alive) setStatus('Ejecutando modelo de visión en el servidor…');
+      }, 1200);
       try {
         const result = await analysisService.analyzeImage({
           image: pendingImage,
           userId: user.id,
-          selectedConditionIds,
         });
+        clearTimeout(statusTimer);
         if (!alive) return;
         setLastAnalysis(result);
         setStatus('Informe completado');
         navigation.replace('Results');
-      } catch {
+      } catch (e) {
+        clearTimeout(statusTimer);
         if (!alive) return;
-        setStatus('Error en el procesamiento del análisis.');
+        const msg = e instanceof Error ? e.message : 'No se pudo completar el análisis.';
+        setFailed(msg);
+        setStatus('');
       }
     })();
 
     return () => {
       alive = false;
     };
-  }, [navigation, pendingImage, setLastAnalysis, user, selectedConditionIds]);
+  }, [navigation, pendingImage, setLastAnalysis, user]);
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
-      <ActivityIndicator size="large" color={colors.primary} style={styles.spinner} />
-      <Text style={styles.title}>Analizando su piel</Text>
-      <Text style={styles.sub}>{status}</Text>
+      {!failed ? (
+        <ActivityIndicator size="large" color={colors.primary} style={styles.spinner} />
+      ) : null}
+      <Text style={styles.title}>{failed ? 'No se pudo analizar' : 'Analizando su piel'}</Text>
+      {failed ? (
+        <ScrollView
+          style={styles.errorScroll}
+          contentContainerStyle={styles.errorScrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.sub, styles.errorText]}>{failed}</Text>
+          <PrimaryButton
+            label="Volver al inicio"
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+            style={styles.retryBtn}
+          />
+        </ScrollView>
+      ) : (
+        <Text style={styles.sub}>{status}</Text>
+      )}
     </SafeAreaView>
   );
 }
@@ -80,5 +102,19 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  errorText: {
+    color: colors.text,
+  },
+  retryBtn: {
+    marginTop: spacing.lg,
+  },
+  errorScroll: {
+    flexGrow: 0,
+    maxHeight: '70%',
+    width: '100%',
+  },
+  errorScrollContent: {
+    paddingBottom: spacing.md,
   },
 });

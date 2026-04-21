@@ -92,7 +92,10 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer scroll>
-      <Text style={styles.lead}>Crea tu cuenta de demostración. Los datos se guardan solo en este dispositivo.</Text>
+      <Text style={styles.lead}>
+        Crea tu cuenta en el servidor para usar el análisis facial con el modelo de visión y guardar tu sesión de
+        forma segura.
+      </Text>
       {formError ? <FormMessage message={formError} variant="error" /> : null}
       <TextField
         label="Nombre"
@@ -142,7 +145,9 @@ export function RegisterScreen({ navigation }: Props) {
           <Text style={styles.footerNote}>Creando tu cuenta…</Text>
         </View>
       ) : (
-        <Text style={styles.hint}>Mínimo 6 caracteres en la contraseña. Sin marcas ni diagnósticos: solo demo.</Text>
+        <Text style={styles.hint}>
+          Mínimo 6 caracteres. Los resultados del análisis son orientativos; no sustituyen el consejo médico.
+        </Text>
       )}
     </ScreenContainer>
   );

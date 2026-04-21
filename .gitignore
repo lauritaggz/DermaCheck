@@ -45,6 +45,7 @@ backend/dermacheck.db
 backend/*.db
 backend/venv/
 backend/uploads/
+backend/ml_models/*.pt
 backend/**/__pycache__/
 backend/**/*.pyc
 

@@ -1,6 +1,6 @@
 export type SkinSeverity = 'none' | 'mild' | 'moderate' | 'severe';
 
-/** Clasificación cosmética orientativa (simulada en Sprint 1). */
+/** Clasificación cosmética orientativa (inferida junto con el modelo de visión). */
 export type SkinType = 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
 
 export interface User {
@@ -16,7 +16,7 @@ export interface SkinCondition {
   label: string;
   description: string;
   severity: SkinSeverity;
-  /** Nota para la demo: clarifica que la confianza es simulada */
+  /** Nota aclaratoria (p. ej. confianza del modelo). */
   analysisNote?: string;
 }
 
@@ -38,9 +38,9 @@ export interface SkinAnalysisResult {
   id: string;
   userId: string;
   analyzedAt: string;
-  /** Tipo de piel aparente (simulado). */
+  /** Tipo de piel aparente (heurístico a partir de hallazgos). */
   skinType: SkinType;
-  /** Por qué se asigna ese tipo en la demo (no es diagnóstico). */
+  /** Por qué se asigna ese tipo (orientativo; no es diagnóstico). */
   skinTypeRationale: string;
   /** Panorama global de severidad de los hallazgos visibles. */
   severityOverview: string;
@@ -67,7 +67,7 @@ export interface DocumentAcceptanceRecord {
 export interface ConsentStatus {
   accepted: boolean;
   acceptedAt: string | null;
-  /** Versión agregada de la demo (alineada con catálogo legal). */
+  /** Versión alineada con el catálogo legal del servidor. */
   policyVersion: string;
   /** Registros por documento aceptado (consentimiento, privacidad, etc.). */
   acceptances?: DocumentAcceptanceRecord[];
@@ -80,6 +80,29 @@ export interface ImageAsset {
   width?: number;
   height?: number;
   source: 'camera' | 'gallery';
+}
+
+/** Detección individual devuelta por el modelo YOLO desde el backend. */
+export interface FaceDetection {
+  class_id: number;
+  class_name: string;
+  confidence: number;
+  bbox: [number, number, number, number];
+}
+
+/** Respuesta del endpoint /api/v1/analysis/face-analyze (subida + IA). */
+export interface FaceAnalyzeResponse {
+  ok: true;
+  user_id: string;
+  image: {
+    filename: string;
+    path: string;
+  };
+  analysis: {
+    model_conf_threshold: number;
+    total_detections: number;
+    detections: FaceDetection[];
+  };
 }
 
 export interface AuthCredentials {
