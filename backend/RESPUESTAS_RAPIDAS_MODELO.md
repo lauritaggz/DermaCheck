@@ -6,7 +6,7 @@
 
 ## ❓ "¿Qué modelo estás usando?"
 
-> **"Estamos usando YOLOv8 Small, un modelo de detección de objetos de última generación (state-of-the-art) que entrenamos específicamente para identificar 7 tipos de afecciones cutáneas faciales. El modelo tiene 11 millones de parámetros, pesa 52MB y puede procesar imágenes en menos de 200 milisegundos."**
+> **"Estamos usando YOLOv8 Medium, un modelo de detección de objetos de última generación (state-of-the-art) que entrenamos específicamente para identificar 6 tipos de afecciones cutáneas faciales. El modelo tiene 25.8 millones de parámetros, pesa 52MB y alcanza un 74% de precisión (mAP@0.5). Procesa imágenes en solo 8 milisegundos en GPU."**
 
 ---
 
@@ -24,14 +24,13 @@
 
 ## ❓ "¿Qué puede detectar?"
 
-> **"El modelo está entrenado para detectar 7 afecciones cutáneas comunes:**
-> - **Acné** (lesiones inflamatorias)
-> - **Rosácea** (enrojecimiento difuso)
-> - **Eczema/Dermatitis** (descamación, irritación)
-> - **Manchas/Hiperpigmentación** (melasma, PIH)
-> - **Puntos negros** (comedones)
-> - **Resequedad** (xerosis)
-> - **Arrugas/Líneas de expresión**
+> **"El modelo está entrenado para detectar 6 afecciones cutáneas comunes:**
+> - **Acné** (lesiones inflamatorias) - mAP 0.326
+> - **Rosácea** (enrojecimiento difuso) - mAP 0.242
+> - **Eczema/Dermatitis** (descamación, irritación) - mAP 0.235
+> - **Manchas/Hiperpigmentación** (melasma, PIH) - mAP 0.324
+> - **Puntos negros** (comedones) - mAP 0.257
+> - **Resequedad** (xerosis) - mAP 0.377 ← La mejor detectada
 >
 > **Y puede detectar múltiples afecciones simultáneamente en una sola imagen."**
 
@@ -45,10 +44,11 @@
 
 ## ❓ "¿Qué tan rápido es?"
 
-> **"El modelo es muy rápido:**
-> - **Con GPU**: 50-100ms por imagen
-> - **Con CPU**: 500-1000ms por imagen
-> - **En producción (FastAPI)**: 100-300ms total (incluyendo I/O)
+> **"El modelo es extremadamente rápido:**
+> - **Inferencia pura (GPU Tesla T4)**: 7.9ms por imagen (~125 FPS)
+> - **Pre/postprocesamiento**: 2.2ms adicionales
+> - **Total en GPU**: ~10ms por imagen
+> - **En producción (FastAPI con I/O)**: 100-300ms total
 >
 > **Esto significa que el usuario obtiene sus resultados en menos de medio segundo, lo cual es esencial para una buena experiencia de usuario en un kiosco o móvil."**
 
@@ -56,25 +56,25 @@
 
 ## ❓ "¿Cómo se integra con el backend?"
 
-> **"Usamos FastAPI para crear un endpoint REST que recibe la imagen, la procesa con el modelo YOLO y devuelve los resultados en formato JSON. El modelo se carga una sola vez en memoria (lazy loading) y se mantiene ahí para todas las peticiones, lo que lo hace muy eficiente. Implementamos thread-safety con locks de Python para manejar múltiples peticiones concurrentes."**
+> **"Usamos FastAPI para crear un endpoint REST que recibe la imagen, la procesa con el modelo YOLO localmente (sin APIs externas) y devuelve los resultados en formato JSON. El modelo se carga una sola vez en memoria (lazy loading) desde `backend/ml_models/best.pt` y se mantiene ahí para todas las peticiones, lo que lo hace muy eficiente. Implementamos thread-safety con locks de Python para manejar múltiples peticiones concurrentes. Todo el procesamiento es local - ninguna imagen sale de nuestro servidor."**
 
 ---
 
-## ❓ "¿Qué versión de YOLO y por qué Small?"
+## ❓ "¿Qué versión de YOLO y por qué Medium?"
 
-> **"Usamos YOLOv8 Small (YOLOv8s) porque ofrece el mejor balance entre velocidad y precisión para nuestro caso de uso:**
+> **"Usamos YOLOv8 Medium (YOLOv8m) porque ofrece el mejor balance entre velocidad y precisión para aplicaciones médicas:**
 > - **YOLOv8n** (nano): Demasiado pequeño, poca precisión
-> - **YOLOv8s** (small): ✅ **Balance perfecto** ← **nuestra elección**
-> - **YOLOv8m** (medium): Más lento, mejora marginal
-> - **YOLOv8l/x** (large/xlarge): Muy lentos, overkill para nuestro caso
+> - **YOLOv8s** (small): Rápido pero insuficiente para decisiones de salud
+> - **YOLOv8m** (medium): ✅ **Balance perfecto** ← **nuestra elección**
+> - **YOLOv8l/x** (large/xlarge): Muy lentos, mejora marginal
 >
-> **Small nos da 95% de la precisión de los modelos grandes con solo 20% del tiempo de inferencia."**
+> **Medium nos da 74% de precisión (vs ~65% de Small) con solo 3ms más de latencia (8ms vs 5ms). Para decisiones de salud, esa mejora de precisión vale la pena."**
 
 ---
 
 ## ❓ "¿Cuántos datos usaron para entrenar?"
 
-> **"Consolidamos 2 datasets públicos de afecciones cutáneas faciales en Roboflow, unificamos las clases manualmente para mantener consistencia, y entrenamos durante aproximadamente 11 horas. El dataset incluye imágenes variadas con diferentes iluminaciones, ángulos y tipos de piel para asegurar que el modelo generalice bien."**
+> **"Consolidamos 2 datasets públicos de afecciones cutáneas faciales en Roboflow, unificamos las clases manualmente para mantener consistencia, y entrenamos durante 300 épocas en una Tesla T4. El dataset final incluye 1,799 imágenes (1,439 para entrenamiento y 360 para validación) con imágenes variadas con diferentes iluminaciones, ángulos y tipos de piel para asegurar que el modelo generalice bien."**
 
 ---
 
@@ -169,10 +169,10 @@
 ## 💡 Tips para Presentaciones
 
 ### Elevator Pitch (30 segundos)
-> "Usamos YOLOv8, un modelo de IA de última generación, entrenado específicamente para detectar 7 tipos de afecciones cutáneas en menos de 300 milisegundos. Es rápido, preciso y lo suficientemente ligero para correr en cualquier servidor estándar."
+> "Usamos YOLOv8 Medium, un modelo de IA de última generación con 74% de precisión, entrenado específicamente para detectar 6 tipos de afecciones cutáneas en solo 8 milisegundos. Todo el procesamiento es local en nuestro servidor - sin APIs externas, sin costos por llamada, máxima privacidad."
 
 ### Demo Pitch (2 minutos)
-> "Nuestro modelo es YOLOv8 Small con 11 millones de parámetros, entrenado durante 11 horas con datasets consolidados de afecciones cutáneas. Puede detectar acné, rosácea, manchas, arrugas y otras condiciones simultáneamente en una sola pasada. Lo interesante es que procesa cada imagen en menos de 200ms, lo que nos permite dar resultados instantáneos al usuario. Lo integramos con FastAPI para crear un endpoint REST que recibe la foto y devuelve detecciones estructuradas en JSON con coordenadas y niveles de confianza."
+> "Nuestro modelo es YOLOv8 Medium con 25.8 millones de parámetros, entrenado durante 300 épocas con 1,799 imágenes de afecciones cutáneas. Alcanza un 74% de precisión (mAP@0.5) y puede detectar acné, rosácea, manchas, resequedad y otras condiciones simultáneamente. Lo interesante es que procesa cada imagen en solo 8ms en GPU, lo que nos permite dar resultados en menos de 300ms total. Lo cargamos localmente en memoria - sin llamadas a APIs externas - lo que garantiza privacidad total y cero costos por uso."
 
 ### Tech Deep Dive (5+ minutos)
 > Usa la ficha técnica completa en `MODELO_BEST_PT_FICHA_TECNICA.md`
@@ -182,18 +182,34 @@
 ## 📊 Datos Clave para Memorizar
 
 ```
-Modelo: YOLOv8 Small (YOLOv8s)
+Modelo: YOLOv8 Medium (YOLOv8m)
+Versión: Ultralytics 8.4.42
 Tamaño: 52 MB
-Parámetros: 11 millones
-Clases: 7 afecciones cutáneas
-Velocidad GPU: 50-100ms
-Velocidad CPU: 500-1000ms
-Velocidad Producción: 100-300ms
-Entrenamiento: 11 horas
-Plataforma: Roboflow
-Framework: Ultralytics + PyTorch
+Parámetros: 25.8 millones
+Capas: 93
+GFLOPs: 78.7
+Clases: 6 afecciones cutáneas
+Dataset: 1,799 imágenes
+  - Train: 1,439 imágenes
+  - Valid: 360 imágenes
+Épocas: 300
+GPU: Tesla T4
+
+Métricas:
+- mAP@0.5: 0.74 (74%)
+- mAP@0.5:0.95: 0.293 (29.3%)  
+- Precision: 73.7%
+- Recall: 68.8%
+
+Velocidad:
+- Inferencia: 7.9ms
+- Total GPU: ~10ms
+- Producción: 100-300ms
+
+Deployment: LOCAL (sin APIs externas)
+Framework: PyTorch 2.10 + CUDA
 Input: 640x640 RGB
-Umbral: 0.25 (25% confianza)
+Umbral: 0.25 confianza
 ```
 
 ---

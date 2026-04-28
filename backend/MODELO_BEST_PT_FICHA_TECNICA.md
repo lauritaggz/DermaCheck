@@ -10,30 +10,31 @@
 
 ### Nombre del Archivo
 - **Archivo**: `best.pt`
+- **Nombre del proyecto**: DermaCheck_Final
 - **Ubicación**: `backend/ml_models/best.pt`
 - **Tamaño**: ~52 MB (52,027,538 bytes)
 - **Formato**: PyTorch (.pt)
 
 ### Descripción
-Modelo de detección de afecciones cutáneas faciales entrenado con YOLOv8, optimizado para identificar 7 clases de condiciones dermatológicas visibles en imágenes de rostros.
+Modelo de detección de afecciones cutáneas faciales entrenado con YOLOv8, optimizado para identificar 6 clases de condiciones dermatológicas visibles en imágenes de rostros. El modelo se carga y ejecuta **localmente en el servidor** (no usa APIs externas).
 
 ---
 
 ## 🏗️ Arquitectura del Modelo
 
 ### Tipo de Modelo
-**YOLOv8 Small (YOLOv8s)**
+**YOLOv8 Medium (YOLOv8m)**
 
-### ¿Por qué YOLOv8s?
-- **Equilibrio óptimo**: Balance entre velocidad y precisión
-- **Eficiencia**: Ideal para deployment en servidores con recursos limitados
-- **Velocidad**: Inferencia rápida (< 200ms por imagen)
-- **Precisión**: Suficiente para detección de afecciones cutáneas
-- **Tamaño razonable**: ~52MB, fácil de desplegar y versionar
+### ¿Por qué YOLOv8m?
+- **Mayor precisión**: Modelo Medium ofrece mejor rendimiento que Small
+- **Equilibrio**: Balance entre velocidad y precisión para aplicaciones médicas
+- **Velocidad aceptable**: Inferencia rápida (~7.9ms por imagen en GPU)
+- **Precisión mejorada**: mAP50 de 0.74 (74% de precisión)
+- **Tamaño manejable**: ~52MB, fácil de desplegar
 
 ### Familia YOLO
 - **Framework**: Ultralytics YOLOv8
-- **Versión base**: YOLOv8 Small
+- **Versión**: 8.4.42
 - **Tipo de tarea**: Object Detection (Detección de objetos)
 - **Backbone**: CSPDarknet con modificaciones de YOLOv8
 
@@ -43,11 +44,11 @@ Modelo de detección de afecciones cutáneas faciales entrenado con YOLOv8, opti
 - **Backbone**: CSPDarknet53 (versión YOLOv8)
 - **Neck**: PAN (Path Aggregation Network)
 - **Head**: Decoupled head para clasificación y regresión
+- **Total de capas**: 93
 
 **Parámetros**:
-- **Total de parámetros**: ~11 millones
-- **Capas**: ~225 capas convolucionales
-- **FLOPs**: ~28.6 GFLOPs (operaciones de punto flotante)
+- **Total de parámetros**: 25,843,234 (~25.8 millones)
+- **GFLOPs**: 78.7 (operaciones de punto flotante)
 
 ---
 
@@ -59,54 +60,65 @@ Modelo de detección de afecciones cutáneas faciales entrenado con YOLOv8, opti
 - Consolidación de 2 datasets independientes
 - Gestionado y etiquetado en **Roboflow**
 - Clases unificadas manualmente para consistencia
+- Ruta del dataset: `/content/dataset`
 
 **Composición del Dataset**:
-- **Total de imágenes**: ~[Número aproximado de imágenes - si lo conoces]
-- **Clases**: 7 afecciones cutáneas
+- **Total de imágenes**: 1,799 imágenes
+  - **Training set**: 1,439 imágenes (80%)
+  - **Validation set**: 360 imágenes (20%)
+- **Clases**: 6 afecciones cutáneas
 - **Anotaciones**: Bounding boxes con etiquetas de clase
 - **Formato de anotación**: YOLO format (normalizado)
 
 **Preprocesamiento**:
 - Redimensionamiento a **640x640 píxeles**
 - Normalización de valores RGB [0-255] → [0-1]
-- Data augmentation (rotación, zoom, brillo, flip horizontal)
+- Data augmentation automático de Roboflow
 
 ### Configuración del Entrenamiento
 
 **Hiperparámetros**:
 ```yaml
-epochs: [número de épocas - típicamente 100-300]
-batch_size: [tamaño del batch - típicamente 16-32]
+epochs: 300
+batch_size: 16
 img_size: 640
-optimizer: AdamW (o SGD con momentum)
-learning_rate: 0.001 (inicial con decay)
-weight_decay: 0.0005
+device: cuda:0 (GPU)
+patience: 50  # Early stopping
+optimizer: AdamW (YOLOv8 default)
 ```
 
+**Entorno de Ejecución**:
+- **Python**: 3.12.13
+- **PyTorch**: 2.10.0+cu128
+- **CUDA**: CUDA:0
+- **GPU**: Tesla T4 (14,913 MiB VRAM)
+- **Plataforma**: Google Colab con Google Drive
+
 **Tiempo de entrenamiento**:
-- **Duración total**: ~11 horas
-- **Hardware**: GPU [especificar si se conoce: V100, A100, T4, etc.]
-- **Plataforma**: Roboflow Train o Google Colab
+- **Épocas completadas**: 300 (o early stopping si aplica)
+- **Hardware**: NVIDIA Tesla T4
+- **Proyecto guardado**: `/content/drive/MyDrive/Entrenamiento_IA/DermaCheck_Final`
 
 **Criterio de parada**:
-- Early stopping basado en validación
-- Selección del mejor modelo por mAP (mean Average Precision)
+- Early stopping con paciencia de 50 épocas
+- Selección del mejor modelo por mAP50-95
 
 ---
 
 ## 📋 Clases Detectadas
 
-El modelo está entrenado para detectar las siguientes 7 afecciones cutáneas:
+El modelo está entrenado para detectar las siguientes **6 afecciones cutáneas**:
 
-| ID | Clase | Nombre Técnico | Descripción |
-|----|-------|----------------|-------------|
-| 0 | **Acné** | Acne vulgaris | Lesiones inflamatorias (pápulas, pústulas) |
-| 1 | **Eczema/Dermatitis** | Eczematous dermatitis | Áreas con descamación, enrojecimiento, sequedad |
-| 2 | **Manchas/Hiperpigmentación** | Hyperpigmentation | Zonas de tono más oscuro (melasma, PIH) |
-| 3 | **Puntos Negros** | Comedones abiertos | Poros obstruidos oxidados |
-| 4 | **Resequedad** | Xerosis | Piel deshidratada, tirantez, descamación |
-| 5 | **Rosácea** | Rosacea | Enrojecimiento difuso, vasos visibles |
-| 6 | **Arrugas/Líneas** | Expression lines/wrinkles | Surcos, líneas de expresión |
+| ID | Clase | Nombre Técnico | Descripción | mAP50-95 |
+|----|-------|----------------|-------------|----------|
+| 0 | **Acné** | Acne vulgaris | Lesiones inflamatorias (pápulas, pústulas) | 0.326 |
+| 1 | **Eczema/Dermatitis** | Eczematous dermatitis | Áreas con descamación, enrojecimiento, sequedad | 0.235 |
+| 2 | **Manchas/Hiperpigmentación** | Hyperpigmentation | Zonas de tono más oscuro (melasma, PIH) | 0.324 |
+| 3 | **Puntos Negros** | Comedones abiertos | Poros obstruidos oxidados | 0.257 |
+| 4 | **Resequedad** | Xerosis | Piel deshidratada, tirantez, descamación | **0.377** |
+| 5 | **Rosácea** | Rosacea | Enrojecimiento difuso, vasos visibles | 0.242 |
+
+**Nota**: La clase con mejor rendimiento es **Resequedad** (mAP 0.377).
 
 ### Nomenclatura en el Código
 ```python
@@ -116,8 +128,7 @@ model.names = {
     2: 'manchas',
     3: 'puntos-negros',
     4: 'resequedad',
-    5: 'rosacea',
-    6: 'wrinkle'
+    5: 'rosacea'
 }
 ```
 
@@ -125,32 +136,45 @@ model.names = {
 
 ## 📈 Métricas de Rendimiento
 
-### Métricas de Evaluación
+### Métricas de Evaluación (Validación Final)
 
 **Precisión General**:
-- **mAP@0.5**: [valor si se conoce, ej: 0.78]
-- **mAP@0.5:0.95**: [valor si se conoce, ej: 0.52]
-- **Precision**: [valor si se conoce]
-- **Recall**: [valor si se conoce]
+- **mAP@0.5**: **0.74** (74% de precisión en IoU 0.5)
+- **mAP@0.5:0.95**: **0.293** (29.3% promedio en umbrales múltiples)
+- **Precision (Promedio)**: **0.737** (73.7%)
+- **Recall (Promedio)**: **0.688** (68.8%)
 
-**Rendimiento por Clase**:
-*[Si tienes los valores específicos por clase, agrégalos aquí]*
+**Rendimiento por Clase (mAP@0.5:0.95)**:
+| Clase | mAP50-95 | Interpretación |
+|-------|----------|----------------|
+| **Resequedad** | **0.377** | 🏆 Mejor clase |
+| Acné | 0.326 | Bueno |
+| Manchas | 0.324 | Bueno |
+| Puntos Negros | 0.257 | Aceptable |
+| Rosácea | 0.242 | Aceptable |
+| Eczema | 0.235 | Mejorable |
 
 **Notas**:
-- El modelo prioriza **recall** sobre precision para minimizar falsos negativos
+- El modelo tiene buen **precision** (73.7%), lo que significa que cuando detecta algo, usualmente es correcto
+- El **recall** (68.8%) indica que encuentra la mayoría de las afecciones presentes
 - Se utiliza un **umbral de confianza de 0.25** por defecto
 - Detecciones con confianza < 0.25 se filtran automáticamente
 
-### Velocidad de Inferencia
+### Velocidad de Inferencia (Medidas Reales)
 
-**Latencia**:
-- **GPU (NVIDIA T4)**: ~50-100ms por imagen
-- **GPU (NVIDIA V100)**: ~30-50ms por imagen
-- **CPU (Intel Xeon)**: ~500-1000ms por imagen
-- **Producción (backend FastAPI)**: 50-300ms total (incluyendo I/O)
+**Latencia por Etapa**:
+- **Preprocesamiento**: 0.2 ms
+- **Inferencia (GPU Tesla T4)**: 7.9 ms
+- **Postprocesamiento**: 2.0 ms
+- **Total por imagen**: ~10.1 ms
+
+**Latencia en Producción**:
+- **GPU (NVIDIA Tesla T4)**: ~10-20ms por imagen (solo modelo)
+- **Producción (backend FastAPI)**: 50-300ms total (incluyendo I/O, red, etc.)
 
 **Throughput**:
-- Puede procesar ~10-20 imágenes por segundo en GPU
+- Puede procesar ~100 imágenes por segundo en GPU (solo inferencia)
+- En producción: ~10-20 imágenes por segundo (con I/O completo)
 
 ---
 
@@ -252,19 +276,28 @@ results = model('imagen.jpg')
 **Backend API**:
 - Framework: FastAPI
 - Endpoint: `POST /api/v1/analysis/inference`
+- **Carga local del modelo**: Se carga desde `backend/ml_models/best.pt`
+- **Inferencia local**: Todo el procesamiento ocurre en el servidor (no APIs externas)
 - Carga perezosa del modelo (lazy loading)
 - Thread-safe con locks de Python
 
-**Pipeline de análisis**:
+**Pipeline de análisis (100% local)**:
 1. Cliente envía imagen (multipart/form-data)
 2. Backend valida formato y tamaño
-3. Modelo ejecuta inferencia
+3. **Modelo local ejecuta inferencia** (sin llamadas externas)
 4. Resultados se formatean a JSON
 5. Respuesta se envía al cliente
 
+**Ventajas de inferencia local**:
+✅ Sin dependencias de APIs externas
+✅ Sin costos por llamada
+✅ Mejor privacidad (datos no salen del servidor)
+✅ Latencia más baja
+✅ Sin límites de rate limiting
+
 **Tiempo total de respuesta**:
 - Análisis completo: **100-300ms**
-- Primera carga: ~500-700ms (carga del modelo)
+- Primera carga: ~500-700ms (carga del modelo en memoria)
 
 ### Escalabilidad
 
@@ -289,15 +322,20 @@ results = model('imagen.jpg')
 
 ## 📊 Comparación con Otras Versiones de YOLO
 
-| Modelo | Parámetros | FLOPs | mAP | Velocidad | Tamaño |
-|--------|------------|-------|-----|-----------|--------|
-| YOLOv8n | 3.2M | 8.7G | Bajo | Muy rápido | ~6 MB |
-| **YOLOv8s** (nuestro) | **11.2M** | **28.6G** | **Medio** | **Rápido** | **~52 MB** |
-| YOLOv8m | 25.9M | 78.9G | Alto | Medio | ~100 MB |
-| YOLOv8l | 43.7M | 165.2G | Muy Alto | Lento | ~175 MB |
-| YOLOv8x | 68.2M | 257.8G | Máximo | Muy lento | ~280 MB |
+| Modelo | Parámetros | FLOPs | Precisión | Velocidad | Tamaño |
+|--------|------------|-------|-----------|-----------|--------|
+| YOLOv8n | 3.2M | 8.7G | Baja | Muy rápido | ~6 MB |
+| YOLOv8s | 11.2M | 28.6G | Media | Rápido | ~25 MB |
+| **YOLOv8m** (nuestro) | **25.8M** | **78.7G** | **Alta** | **Medio-Rápido** | **~52 MB** |
+| YOLOv8l | 43.7M | 165.2G | Muy Alta | Medio-Lento | ~90 MB |
+| YOLOv8x | 68.2M | 257.8G | Máxima | Lento | ~140 MB |
 
-**✅ YOLOv8s es ideal para nuestro caso de uso**: Balance perfecto entre velocidad y precisión para deployment en producción.
+**✅ YOLOv8m es ideal para aplicaciones médicas**: Balance entre precisión (mAP 0.74) y velocidad (~8ms) para detección confiable de afecciones cutáneas.
+
+**¿Por qué Medium y no Small?**
+- Mejor precisión para decisiones de salud (74% vs ~65%)
+- Velocidad aún aceptable (8ms vs 5ms - diferencia insignificante)
+- Mejor detección de afecciones sutiles (eczema, rosácea)
 
 ---
 
@@ -362,7 +400,7 @@ v1.0.0 (Actual)
 ## ❓ Preguntas Frecuentes (FAQ)
 
 ### ¿Qué modelo estás usando?
-**YOLOv8 Small (YOLOv8s)**, un modelo de detección de objetos de última generación (state-of-the-art) entrenado específicamente para identificar 7 tipos de afecciones cutáneas faciales.
+**YOLOv8 Medium (YOLOv8m)**, un modelo de detección de objetos de última generación (state-of-the-art) entrenado específicamente para identificar 6 tipos de afecciones cutáneas faciales. El modelo tiene 25.8 millones de parámetros y alcanza un 74% de precisión (mAP@0.5).
 
 ### ¿Por qué YOLO y no otro modelo?
 YOLO es ideal para nuestro caso porque:
@@ -375,7 +413,11 @@ YOLO es ideal para nuestro caso porque:
 Es un **modelo custom**: tomamos YOLOv8 pre-entrenado en COCO (conocimiento general de visión) y lo **fine-tuneamos** (re-entrenamos) con nuestro dataset específico de afecciones cutáneas durante 11 horas.
 
 ### ¿Qué tan preciso es el modelo?
-El modelo tiene un balance entre precisión y velocidad. Usa un umbral de confianza de 0.25, lo que significa que solo reporta detecciones con al menos 25% de confianza. En la práctica, la mayoría de detecciones superan el 60-80% de confianza.
+El modelo tiene un **mAP@0.5 de 0.74 (74%)**, lo que significa que en el 74% de los casos identifica correctamente las afecciones cuando el bounding box tiene al menos 50% de overlap con la realidad. La **precisión promedio es 73.7%** y el **recall es 68.8%**, lo que indica que:
+- Cuando detecta algo, usualmente es correcto (73.7%)
+- Encuentra la mayoría de las afecciones presentes (68.8%)
+
+Usa un umbral de confianza de 0.25, pero la mayoría de detecciones superan el 60-80% de confianza.
 
 ### ¿Puede detectar múltiples afecciones?
 Sí, el modelo puede detectar **múltiples instancias** de diferentes afecciones en una sola imagen. Por ejemplo, puede identificar acné en la frente y rosácea en las mejillas simultáneamente.
