@@ -61,7 +61,7 @@ export function ModelQuickTestScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 1,
     });
     if (result.canceled || !result.assets[0]?.uri) return;

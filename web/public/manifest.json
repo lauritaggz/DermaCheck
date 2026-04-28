@@ -1,0 +1,27 @@
+{
+  "name": "DermaCheck - Análisis Dermatológico con IA",
+  "short_name": "DermaCheck",
+  "description": "Análisis dermatológico profesional con inteligencia artificial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1B5E96",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
