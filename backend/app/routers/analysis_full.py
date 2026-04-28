@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AppUser, SkinAnalysis
 from app.schemas.analysis import AnalysisResponse, AnalysisResult, DetectionBox, ImageInfo
+from app.schemas.diagnosis import DiagnosisResponse
+from app.services.diagnosis_service import generate_diagnosis
 from app.services.inference_service import run_inference
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -37,17 +39,18 @@ def _parse_user_id(user_id: str) -> int:
     return n
 
 
-@router.post("/face-analyze", response_model=AnalysisResponse)
+@router.post("/face-analyze", response_model=DiagnosisResponse)
 async def analyze_face_image(
     user_id: str = Form(...),
     face_image: UploadFile = File(...),
     conf: float = Form(0.25),
     db: Session = Depends(get_db),
-) -> AnalysisResponse:
+) -> DiagnosisResponse:
     """
-    Guarda la captura facial del usuario y devuelve las detecciones del modelo.
+    Guarda la captura facial del usuario, ejecuta análisis y genera diagnóstico preliminar.
     
-    Registra el resultado en la base de datos para histórico.
+    Retorna detecciones del modelo + diagnóstico estructurado con información médica.
+    Registra el resultado en la base de datos para histórico (futuro).
     """
     start_time = time.perf_counter()
     n = _parse_user_id(user_id)
@@ -101,6 +104,9 @@ async def analyze_face_image(
     
     # Calcular tiempo de procesamiento
     processing_time_ms = (time.perf_counter() - start_time) * 1000
+    
+    # **NUEVO: Generar diagnóstico preliminar**
+    diagnosis = generate_diagnosis(detections)
 
     # Registrar en base de datos
     analysis_record = SkinAnalysis(
@@ -117,20 +123,21 @@ async def analyze_face_image(
     db.commit()
     db.refresh(analysis_record)
 
-    # Construir respuesta estructurada
-    return AnalysisResponse(
+    # Construir respuesta estructurada CON DIAGNÓSTICO
+    return DiagnosisResponse(
         ok=True,
         user_id=str(n),
-        image=ImageInfo(
-            filename=filename,
-            path=rel_path,
-            size_bytes=len(content),
-        ),
-        analysis=AnalysisResult(
-            model_conf_threshold=conf,
-            total_detections=len(detections),
-            detections=detections,
-            processing_time_ms=processing_time_ms,
-        ),
+        image={
+            "filename": filename,
+            "path": rel_path,
+            "size_bytes": len(content),
+        },
+        analysis={
+            "model_conf_threshold": conf,
+            "total_detections": len(detections),
+            "detections": [d.model_dump() for d in detections],
+            "processing_time_ms": processing_time_ms,
+        },
+        diagnosis=diagnosis,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )

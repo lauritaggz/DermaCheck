@@ -1,5 +1,5 @@
 """
-Esquemas Pydantic para análisis facial.
+Esquemas Pydantic para análisis facial y diagnóstico.
 """
 
 from .analysis import (
@@ -11,6 +11,11 @@ from .analysis import (
     ImageInfo,
     InferenceResponse,
 )
+from .diagnosis import (
+    DetectedCondition,
+    DiagnosisResponse,
+    DiagnosisResult,
+)
 
 __all__ = [
     "AnalysisResponse",
@@ -20,4 +25,7 @@ __all__ = [
     "ErrorResponse",
     "ImageInfo",
     "InferenceResponse",
+    "DetectedCondition",
+    "DiagnosisResponse",
+    "DiagnosisResult",
 ]
