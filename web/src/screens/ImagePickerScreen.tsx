@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PrimaryButton, ScreenContainer } from '../components';
+import { ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
 import { CameraIcon, ImageIcon, LightBulbIcon, TargetIcon, GridIcon } from '../components/Icons';

@@ -62,7 +62,7 @@ export function aggregateByClass(detections: FaceDetection[]): Array<{
   }
   
   return Array.from(best.entries())
-    .map(([className, { confidence, detection }], idx) => ({
+    .map(([className, { confidence }], idx) => ({
       id: `detection-${idx}`,
       label: formatClassLabel(className),
       className,

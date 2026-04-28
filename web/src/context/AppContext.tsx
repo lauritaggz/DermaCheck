@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
+import { createContext, type ReactNode, useContext, useState } from 'react';
 import type { User, ImageAsset, ConsentStatus } from '../types';
 import { LEGAL_DOC_VERSION } from '../constants/legalDocuments';
 

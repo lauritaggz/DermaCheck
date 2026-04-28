@@ -15,6 +15,8 @@ export function PreviewScreen() {
   }
 
   function handleRetake() {
+    if (!pendingImage) return;
+    
     if (pendingImage.uri.startsWith('blob:')) {
       URL.revokeObjectURL(pendingImage.uri);
     }
@@ -23,6 +25,8 @@ export function PreviewScreen() {
   }
 
   async function handleAnalyze() {
+    if (!pendingImage) return;
+    
     setAnalyzing(true);
     navigate('/processing');
   }
