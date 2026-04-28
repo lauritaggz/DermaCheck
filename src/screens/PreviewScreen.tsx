@@ -48,13 +48,13 @@ export function PreviewScreen({ navigation }: Props) {
   }, [navigation, pendingImage?.source, setPendingImage]);
 
   const handleConfirm = useCallback(() => {
-    navigation.navigate('ConditionSelection');
+    navigation.navigate('Processing');
   }, [navigation]);
 
   const handleForceContinue = useCallback(() => {
     Alert.alert(
       'Continuar sin cumplir recomendaciones',
-      'La foto no supera las comprobaciones básicas de encuadre e iluminación. El informe de demostración será menos fiable. ¿Seguir de todos modos?',
+      'La foto no supera las comprobaciones básicas de encuadre e iluminación. El modelo podría recibir una imagen subóptima. ¿Seguir de todos modos?',
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Sí, continuar', style: 'destructive', onPress: handleConfirm },
@@ -73,7 +73,7 @@ export function PreviewScreen({ navigation }: Props) {
     <ScreenContainer scroll>
       <Text style={styles.lead}>
         Revisa la vista previa. Validamos de forma aproximada la luz y que el rostro se vea centrado; es orientativo
-        para la demo, no sustituye a un sistema clínico.
+        antes de enviar la imagen al análisis por IA, no sustituye una valoración clínica.
       </Text>
 
       <View style={styles.frame}>
@@ -134,12 +134,12 @@ export function PreviewScreen({ navigation }: Props) {
       )}
 
       <PrimaryButton
-        label="Volver al inicio de selección"
+        label="Volver a elegir imagen"
         variant="ghost"
         style={styles.gapSm}
         onPress={() => {
           setPendingImage(null);
-          navigation.replace('ConditionSelection');
+          navigation.replace('ImagePicker');
         }}
         disabled={validating}
       />

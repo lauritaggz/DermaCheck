@@ -34,6 +34,14 @@ export function WelcomeScreen({ navigation }: Props) {
           style={styles.secondaryBtn}
           onPress={() => navigation.navigate('Register')}
         />
+        {__DEV__ ? (
+          <PrimaryButton
+            label="Prueba rápida del modelo (IA)"
+            variant="ghost"
+            style={styles.secondaryBtn}
+            onPress={() => navigation.navigate('ModelQuickTest')}
+          />
+        ) : null}
         <Text style={styles.footnote}>Sistema de Análisis Dermatológico v1.0</Text>
       </ScreenContainer>
     </ImageBackground>

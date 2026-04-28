@@ -1,4 +1,4 @@
-"""Documentos legales vigentes para la demo (deben coincidir con versiones en la app móvil)."""
+"""Documentos legales vigentes (versiones alineadas con la app móvil)."""
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,13 +9,13 @@ DEFAULT_DOCS: list[dict[str, str | bool]] = [
     {
         "slug": "consent_informed",
         "title": "Consentimiento informado",
-        "version": "1.0-demo",
+        "version": "1.0",
         "is_active": True,
     },
     {
         "slug": "privacy_policy",
         "title": "Política de privacidad",
-        "version": "1.0-demo",
+        "version": "1.0",
         "is_active": True,
     },
 ]

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.models import create_tables
-from app.routers import analysis_upload, auth, consent
+from app.routers import analysis_full, analysis_inference, analysis_upload, auth, consent
 from app.seed_legal_documents import seed_legal_documents
 from app.database import SessionLocal
 
@@ -34,6 +34,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(consent.router, prefix=settings.api_prefix)
 app.include_router(analysis_upload.router, prefix=settings.api_prefix)
+app.include_router(analysis_inference.router, prefix=settings.api_prefix)
+app.include_router(analysis_full.router, prefix=settings.api_prefix)
 
 
 @app.get("/health")

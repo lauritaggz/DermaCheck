@@ -78,14 +78,12 @@ export function LegalAcceptancesScreen({ navigation }: Props) {
         <DisclaimerBanner text="Listado orientativo. En producción el contenido legal completo lo facilitaría el responsable del tratamiento." />
         <Text style={styles.title}>Documentos aceptados</Text>
         <Text style={styles.lead}>
-          Aquí ves qué documentos quedaron registrados para tu usuario y en qué momento (hora del servidor cuando hay API;
-          en modo solo-app, los datos salen de esta sesión).
+          Aquí ves qué documentos quedaron registrados para tu usuario y en qué momento (hora del servidor).
         </Text>
 
         {!getApiBaseUrl() ? (
           <Text style={styles.offline}>
-            No hay URL de API configurada (EXPO_PUBLIC_API_BASE_URL). Configúrala para persistir en MySQL y refrescar desde
-            el servidor.
+            Configura EXPO_PUBLIC_API_BASE_URL en el .env y reinicia la app para sincronizar con el servidor.
           </Text>
         ) : null}
 

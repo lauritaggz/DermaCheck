@@ -1,20 +1,11 @@
+import { AUTH_ERRORS } from '../constants/authMessages';
 import { apiUrl, getApiBaseUrl } from '../config/api';
 import type { AuthCredentials, RegisterPayload, User } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
-import { delay } from '../utils/delay';
-import {
-  addAccount,
-  emailExists,
-  findAccountByEmail,
-  mockAccountToUser,
-  type MockStoredAccount,
-} from './mockAccountStorage';
 
-const MOCK_LATENCY_MS = 550;
 const API_V1 = '/api/v1';
 
-/** Errores de negocio mock (sin validar formato aquí; lo hace la pantalla). */
 export const AuthMessages = {
   emailNotRegistered:
     'No encontramos una cuenta con este correo. ¿Quieres crear una?',
@@ -82,54 +73,22 @@ async function registerWithApi(payload: RegisterPayload): Promise<{ user: User }
   }
 }
 
-async function loginMock(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
-  await delay(MOCK_LATENCY_MS);
-  const email = credentials.email.trim().toLowerCase();
-  const acc = await findAccountByEmail(email);
-  if (!acc) {
-    return { error: AuthMessages.emailNotRegistered };
-  }
-  if (acc.password !== credentials.password) {
-    return { error: AuthMessages.wrongPassword };
-  }
-  return { user: mockAccountToUser(acc) };
-}
-
-async function registerMock(payload: RegisterPayload): Promise<{ user: User } | { error: string }> {
-  await delay(MOCK_LATENCY_MS);
-  const email = payload.email.trim().toLowerCase();
-  if (await emailExists(email)) {
-    return { error: AuthMessages.emailAlreadyRegistered };
-  }
-  const userId = `user_${Date.now()}`;
-  const createdAt = new Date().toISOString();
-  const account: MockStoredAccount = {
-    id: userId,
-    email,
-    password: payload.password,
-    name: payload.name.trim(),
-    createdAt,
-  };
-  await addAccount(account);
-  return { user: mockAccountToUser(account) };
-}
-
 export const authService = {
   /**
-   * Con `EXPO_PUBLIC_API_BASE_URL`: registro en SQLite (servidor).
-   * Sin URL: cuentas solo en AsyncStorage del móvil (demo offline).
+   * Registro e inicio de sesión contra el servidor (SQLite en el API).
+   * Requiere `EXPO_PUBLIC_API_BASE_URL` en el `.env` de la raíz del proyecto.
    */
   async login(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
-    if (getApiBaseUrl()) {
-      return loginWithApi(credentials);
+    if (!getApiBaseUrl()) {
+      return { error: AUTH_ERRORS.SERVER_REQUIRED };
     }
-    return loginMock(credentials);
+    return loginWithApi(credentials);
   },
 
   async register(payload: RegisterPayload): Promise<{ user: User } | { error: string }> {
-    if (getApiBaseUrl()) {
-      return registerWithApi(payload);
+    if (!getApiBaseUrl()) {
+      return { error: AUTH_ERRORS.SERVER_REQUIRED };
     }
-    return registerMock(payload);
+    return registerWithApi(payload);
   },
 };

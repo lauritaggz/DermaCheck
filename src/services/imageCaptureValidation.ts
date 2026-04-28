@@ -1,5 +1,5 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { decode, type RawImageData } from 'jpeg-js';
 
 /** Códigos internos para priorizar mensajes en UI. */
@@ -44,9 +44,9 @@ const ISSUE_PRIORITY: Record<CaptureValidationIssueCode, number> = {
   face_off_center: 4,
 };
 
-/** Mensaje unificado: el fallo viene del pipeline local de la demo, no del backend de análisis clínico. */
+/** Mensaje unificado: fallo en la validación local previa al envío al servidor. */
 const MSG_DECODE_DEMO =
-  'En la demo el módulo de análisis de imagen (luz y encuadre) es básico y a veces no puede leer la foto en este dispositivo. Repite la captura o usa «Continuar de todos modos» para seguir con el análisis simulado.';
+  'La comprobación local de luz y encuadre es básica y a veces no puede leer la foto en este dispositivo. Repite la captura o usa «Continuar de todos modos» para enviar la imagen al análisis con IA.';
 
 function decodeIssue(): CaptureValidationIssue {
   return { code: 'decode_error', message: MSG_DECODE_DEMO };
@@ -85,7 +85,7 @@ function luma(r: number, g: number, b: number): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
-/** Heurística RGB simple (incluye tonos medios; solo orientativa para demo). */
+/** Heurística RGB simple (incluye tonos medios; solo orientativa antes del modelo). */
 function skinLike(r: number, g: number, b: number): boolean {
   if (r < 52 || g < 38 || b < 28) return false;
   if (r <= g || r <= b) return false;
@@ -258,7 +258,7 @@ function analyzeBuffer(jpegBytes: Uint8Array): CaptureValidationResult {
 }
 
 /**
- * Validación heurística (brillo + proxy de piel/centrado). Pensada para demo; no sustituye a un modelo clínico.
+ * Validación heurística (brillo + proxy de piel/centrado). Complementa al modelo de visión; no es diagnóstico clínico.
  */
 export async function validateCaptureImage(uri: string): Promise<CaptureValidationResult> {
   try {
