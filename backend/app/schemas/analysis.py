@@ -41,6 +41,8 @@ class ImageInfo(BaseModel):
 class AnalysisResult(BaseModel):
     """Resultado completo del análisis facial."""
 
+    model_config = {"protected_namespaces": ()}  # Permitir campos que empiecen con "model_"
+
     model_conf_threshold: float = Field(
         ..., description="Umbral de confianza usado", ge=0.0, le=1.0
     )
