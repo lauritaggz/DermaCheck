@@ -86,7 +86,7 @@ npm install
 ```
 
 ### 4. Modelo de IA
-
+https://drive.google.com/file/d/1MNJyDRwYQiAkMlGNP6MjUEeEmCaxNgA_/view?usp=sharing
 El archivo `best.pt` (132MB) no está en Git. Colócalo en `backend/ml_models/best.pt`.
 
 ## Configuración
