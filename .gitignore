@@ -35,3 +35,4 @@ deploy/production/data/uploads/*
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+node_modules
