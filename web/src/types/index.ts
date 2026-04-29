@@ -8,7 +8,6 @@ export interface DetectedCondition {
   confianza_promedio: number;
   cantidad_detecciones: number;
   descripcion: string;
-  recomendaciones: string[];
   advertencias: string[];
   color_ui: string;
 }

@@ -8,16 +8,13 @@ from pydantic import BaseModel, Field
 
 
 class DetectedCondition(BaseModel):
-    """Condición detectada con contexto médico."""
+    """Condición detectada con información médica (solo diagnóstico, sin tratamiento específico)."""
 
     id: str = Field(..., description="ID de la condición (ej: 'acne')")
     label: str = Field(..., description="Nombre de la condición en español")
     confianza_promedio: float = Field(..., description="Confianza promedio (0-1)", ge=0.0, le=1.0)
     cantidad_detecciones: int = Field(..., description="Número de detecciones", ge=1)
     descripcion: str = Field(..., description="Descripción médica de la condición")
-    recomendaciones: list[str] = Field(
-        default_factory=list, description="Recomendaciones específicas"
-    )
     advertencias: list[str] = Field(default_factory=list, description="Advertencias médicas")
     color_ui: str = Field(..., description="Color para UI (blue, red, amber, green)")
 

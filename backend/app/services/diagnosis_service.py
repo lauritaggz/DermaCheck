@@ -130,14 +130,13 @@ def generate_diagnosis(detections: list[DetectionBox]) -> DiagnosisResult:
         # Calcular confianza promedio
         confianza_promedio = sum(d.confidence for d in dets) / len(dets)
         
-        # Crear condición detectada
+        # Crear condición detectada (solo diagnóstico, sin recomendaciones específicas)
         condicion = DetectedCondition(
             id=condition_data["id"],
             label=condition_data["label_es"],
             confianza_promedio=round(confianza_promedio, 3),
             cantidad_detecciones=len(dets),
-            descripcion=condition_data["descripcion_corta"],
-            recomendaciones=condition_data["recomendaciones"],
+            descripcion=condition_data["descripcion_medica"],  # Descripción médica completa
             advertencias=condition_data["advertencias"],
             color_ui=condition_data["color_ui"],
         )

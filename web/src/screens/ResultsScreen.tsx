@@ -186,21 +186,6 @@ export function ResultsScreen() {
                           </div>
                         </div>
 
-                        {/* Recomendaciones de la condición */}
-                        {condicion.recomendaciones.length > 0 && (
-                          <div className="ml-4 pl-4 border-l-2 border-gray-200">
-                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Recomendaciones:</h4>
-                            <ul className="space-y-1">
-                              {condicion.recomendaciones.slice(0, 3).map((rec, idx) => (
-                                <li key={idx} className="text-sm text-gray-600 flex gap-2">
-                                  <span className="text-primary">•</span>
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
                         {/* Advertencias de la condición */}
                         {condicion.advertencias.length > 0 && (
                           <div className="ml-4 pl-4 border-l-2 border-amber-300">
