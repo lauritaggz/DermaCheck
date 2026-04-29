@@ -277,6 +277,7 @@ npm run lint
 **Opción A:** Descargar desde Google Drive (compartido internamente)
 ```bash
 # Colocar en: backend/ml_models/best.pt
+https://drive.google.com/file/d/1MNJyDRwYQiAkMlGNP6MjUEeEmCaxNgA_/view?usp=sharing
 ```
 
 **Opción B:** Entrenar tu propio modelo
