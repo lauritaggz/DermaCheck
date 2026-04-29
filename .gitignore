@@ -36,11 +36,14 @@ yarn-error.*
 backend/.env
 deploy/production/.env
 deploy/production/.env.*
+
 # Datos de MySQL y archivos subidos (persistidos bajo deploy/production/data/)
 deploy/production/data/mysql/*
 !deploy/production/data/mysql/.gitkeep
 deploy/production/data/uploads/*
 !deploy/production/data/uploads/.gitkeep
+
+# Backend Python
 backend/dermacheck.db
 backend/*.db
 backend/venv/
@@ -48,6 +51,12 @@ backend/uploads/
 backend/ml_models/*.pt
 backend/**/__pycache__/
 backend/**/*.pyc
+
+# Web app (Vite + React)
+web/dist/
+web/node_modules/
+web/.env
+web/.env.local
 
 # typescript
 *.tsbuildinfo
