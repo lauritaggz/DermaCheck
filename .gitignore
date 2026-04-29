@@ -1,46 +1,6 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env
-.env*.local
-backend/.env
-deploy/production/.env
-deploy/production/.env.*
-# Datos de MySQL y archivos subidos (persistidos bajo deploy/production/data/)
-deploy/production/data/mysql/*
-!deploy/production/data/mysql/.gitkeep
-deploy/production/data/uploads/*
-!deploy/production/data/uploads/.gitkeep
+# Backend Python
 backend/dermacheck.db
 backend/*.db
 backend/venv/
@@ -48,10 +8,30 @@ backend/uploads/
 backend/ml_models/*.pt
 backend/**/__pycache__/
 backend/**/*.pyc
+backend/.env
 
-# typescript
+# Web app (Vite + React)
+web/dist/
+web/node_modules/
+web/.env
+web/.env.local
+
+# Deploy
+deploy/production/.env
+deploy/production/.env.*
+deploy/production/data/mysql/*
+!deploy/production/data/mysql/.gitkeep
+deploy/production/data/uploads/*
+!deploy/production/data/uploads/.gitkeep
+
+# macOS
+.DS_Store
+*.pem
+
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*

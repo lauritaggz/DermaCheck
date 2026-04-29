@@ -1,20 +1,6 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
-import type { User, ImageAsset, ConsentStatus } from '../types';
+import type { User, ImageAsset, ConsentStatus, AnalysisWithDiagnosis } from '../types';
 import { LEGAL_DOC_VERSION } from '../constants/legalDocuments';
-
-interface AnalysisResult {
-  conditions: Array<{
-    id: string;
-    label: string;
-    className: string;
-    confidence: number;
-    color: string;
-    severity: string;
-  }>;
-  recommendations: string[];
-  imageUri: string;
-  analyzedAt: string;
-}
 
 interface AppState {
   user: User | null;
@@ -23,8 +9,8 @@ interface AppState {
   setPendingImage: (image: ImageAsset | null) => void;
   consent: ConsentStatus;
   setConsent: (consent: ConsentStatus) => void;
-  analysisResult: AnalysisResult | null;
-  setAnalysisResult: (result: AnalysisResult | null) => void;
+  analysisResult: AnalysisWithDiagnosis | null;
+  setAnalysisResult: (result: AnalysisWithDiagnosis | null) => void;
 }
 
 const AppContext = createContext<AppState | undefined>(undefined);
@@ -48,7 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   const [pendingImage, setPendingImage] = useState<ImageAsset | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisWithDiagnosis | null>(null);
 
   function setUser(newUser: User | null) {
     setUserState(newUser);

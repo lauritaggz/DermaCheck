@@ -4,8 +4,6 @@ import { ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
 import { ScanIcon } from '../components/Icons';
-import { analysisService } from '../services/analysisService';
-import { aggregateByClass, generateRecommendations } from '../services/analysisMappers';
 
 export function ProcessingScreen() {
   const { pendingImage, user, setAnalysisResult } = useAppState();
@@ -24,25 +22,32 @@ export function ProcessingScreen() {
         // Convertir la imagen a Blob
         const blob = await fetch(pendingImage!.uri).then(r => r.blob());
         
-        // Enviar al backend
-        const result = await analysisService.analyzeImage(blob, user!.id, 0.25);
-        
-        if ('error' in result) {
-          setError(result.error);
+        // Crear FormData
+        const formData = new FormData();
+        formData.append('face_image', blob, 'capture.jpg');
+        formData.append('user_id', user!.id);
+        formData.append('conf', '0.25');
+
+        // Enviar al backend (endpoint con diagnóstico)
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/v1/analysis/face-analyze`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(errorData.detail || 'Error al analizar la imagen');
           return;
         }
 
-        // Procesar las detecciones
-        const conditions = aggregateByClass(result.data.detections);
-        const recommendations = generateRecommendations(conditions);
+        const result = await response.json();
+        
+        // Guardar resultado completo (con diagnóstico)
+        setAnalysisResult(result);
 
-        // Guardar resultado en el contexto
-        setAnalysisResult({
-          conditions,
-          recommendations,
-          imageUri: pendingImage!.uri,
-          analyzedAt: new Date().toISOString(),
-        });
+        // Actualizar progreso a 100%
+        setProgress(100);
 
         // Navegar a resultados
         setTimeout(() => navigate('/results'), 500);
