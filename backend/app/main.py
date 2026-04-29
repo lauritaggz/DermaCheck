@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.models import create_tables
@@ -36,6 +38,11 @@ app.include_router(consent.router, prefix=settings.api_prefix)
 app.include_router(analysis_upload.router, prefix=settings.api_prefix)
 app.include_router(analysis_inference.router, prefix=settings.api_prefix)
 app.include_router(analysis_full.router, prefix=settings.api_prefix)
+
+# Servir archivos estáticos (imágenes subidas)
+static_path = Path(__file__).parent.parent / "static"
+static_path.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 
 @app.get("/health")
