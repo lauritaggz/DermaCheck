@@ -152,7 +152,7 @@ export function ResultsScreen() {
                   
                   <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 border-2 border-gray-200 shadow-inner">
                     <img
-                      src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/${image.path}`}
+                      src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${image.path}`}
                       alt="Imagen analizada"
                       className="w-full h-full object-cover"
                     />

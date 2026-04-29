@@ -40,9 +40,10 @@ app.include_router(analysis_inference.router, prefix=settings.api_prefix)
 app.include_router(analysis_full.router, prefix=settings.api_prefix)
 
 # Servir archivos estáticos (imágenes subidas)
-static_path = Path(__file__).parent.parent / "static"
-static_path.mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+uploads_path = Path(__file__).parent.parent / "uploads"
+uploads_path.mkdir(exist_ok=True)
+# Montar ANTES del health endpoint para que funcione correctamente
+app.mount("/uploads", StaticFiles(directory=str(uploads_path), html=False), name="uploads")
 
 
 @app.get("/health")
