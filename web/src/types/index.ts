@@ -1,3 +1,58 @@
+// ============================================================================
+// Tipos para Diagnóstico Preliminar (HU 6)
+// ============================================================================
+
+export interface DetectedCondition {
+  id: string;
+  label: string;
+  confianza_promedio: number;
+  cantidad_detecciones: number;
+  descripcion: string;
+  recomendaciones: string[];
+  advertencias: string[];
+  color_ui: string;
+}
+
+export interface MensajeSeveridad {
+  titulo: string;
+  mensaje: string;
+  consejo: string;
+}
+
+export interface DiagnosisResult {
+  resumen_general: string;
+  severidad_general: 'ninguna' | 'leve' | 'moderada' | 'severa';
+  requiere_evaluacion: boolean;
+  condiciones_detectadas: DetectedCondition[];
+  disclaimer: string;
+  mensaje_severidad: MensajeSeveridad;
+  advertencias_generales: string[];
+  consejos_generales: string[];
+}
+
+// Análisis completo con diagnóstico (respuesta del endpoint face-analyze)
+export interface AnalysisWithDiagnosis {
+  ok: boolean;
+  user_id: string;
+  image: {
+    filename: string;
+    path: string;
+    size_bytes: number;
+  };
+  analysis: {
+    model_conf_threshold: number;
+    total_detections: number;
+    detections: FaceDetection[];
+    processing_time_ms: number;
+  };
+  diagnosis: DiagnosisResult;
+  timestamp: string;
+}
+
+// ============================================================================
+// Tipos Legacy (anteriores a HU 6)
+// ============================================================================
+
 export type SkinSeverity = 'none' | 'mild' | 'moderate' | 'severe';
 
 /** Clasificación cosmética orientativa (inferida junto con el modelo de visión). */

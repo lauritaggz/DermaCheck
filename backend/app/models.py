@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import engine
@@ -32,6 +32,9 @@ class AppUser(Base):
         DateTime(timezone=True),
         server_default=func.now(),
     )
+
+    # Relación con análisis
+    analyses: Mapped[list["SkinAnalysis"]] = relationship(back_populates="user")
 
 
 class LegalDocument(Base):
@@ -69,6 +72,38 @@ class UserDocumentAcceptance(Base):
     status: Mapped[str] = mapped_column(String(32), default="accepted")
 
     document: Mapped[LegalDocument] = relationship(back_populates="acceptances")
+
+
+class SkinAnalysis(Base):
+    """Registro de análisis de piel realizados por los usuarios."""
+
+    __tablename__ = "skin_analyses"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_users.id"), index=True)
+    image_filename: Mapped[str] = mapped_column(String(255))
+    image_path: Mapped[str] = mapped_column(String(512))
+    image_size_bytes: Mapped[int | None] = mapped_column(Integer(), nullable=True)
+    
+    # Configuración del análisis
+    model_conf_threshold: Mapped[float] = mapped_column(Float(), default=0.25)
+    
+    # Resultados
+    total_detections: Mapped[int] = mapped_column(Integer(), default=0)
+    detections_json: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    
+    # Métricas de rendimiento
+    processing_time_ms: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        index=True,
+    )
+    
+    # Relación con usuario
+    user: Mapped[AppUser] = relationship(back_populates="analyses")
 
 
 def create_tables() -> None:
