@@ -1,0 +1,87 @@
+# DermaCheck - Producción con MySQL
+# Frontend Web (React + Vite) + Backend (FastAPI) + MySQL
+# 
+# Uso: docker compose up --build -d
+# 
+# URLs:
+#   - Frontend: http://localhost:3000
+#   - Backend API: http://localhost:8000
+#   - Swagger Docs: http://localhost:8000/docs
+#
+# Cambiar credenciales MySQL antes de exponer a internet.
+# Volúmenes persistentes: mysql_data (base de datos), face_uploads (imágenes)
+
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dermacheck
+      MYSQL_USER: dermacheck
+      MYSQL_PASSWORD: dermacheck_change_in_production
+      MYSQL_ROOT_PASSWORD: dermacheck_root_change_in_production
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-pdermacheck_root_change_in_production"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - dermacheck_network
+
+  # Backend API (FastAPI + PyTorch + YOLO)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://dermacheck:dermacheck_change_in_production@db:3306/dermacheck?charset=utf8mb4
+      MODEL_PATH: ml_models/best.pt
+      UPLOAD_DIR: static/uploads
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+    volumes:
+      - face_uploads:/app/static/uploads
+      - ./backend/ml_models:/app/ml_models:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - dermacheck_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend Web (React + Vite)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    restart: unless-stopped
+    ports:
+      - "${WEB_HOST_PORT:-3000}:80"
+    depends_on:
+      - api
+    networks:
+      - dermacheck_network
+
+volumes:
+  mysql_data:
+    driver: local
+  face_uploads:
+    driver: local
+
+networks:
+  dermacheck_network:
+    driver: bridge

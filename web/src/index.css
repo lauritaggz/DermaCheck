@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 bg-white text-text antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer utilities {
+  /* Utilities para orientación de tótem */
+  .totem-portrait {
+    @apply max-w-[1080px] mx-auto;
+  }
+
+  .totem-landscape {
+    @apply max-w-full;
+  }
+}

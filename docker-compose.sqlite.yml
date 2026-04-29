@@ -1,0 +1,65 @@
+# DermaCheck - Desarrollo con SQLite
+# Frontend Web (React + Vite) + Backend (FastAPI) + SQLite
+# 
+# Uso: docker compose -f docker-compose.sqlite.yml up --build -d
+# 
+# URLs:
+#   - Frontend: http://localhost:3000
+#   - Backend API: http://localhost:8000
+#   - Swagger Docs: http://localhost:8000/docs
+#
+# Base de datos: SQLite en volumen persistente
+# Ideal para desarrollo y testing
+
+version: '3.8'
+
+services:
+  # Backend API (FastAPI + PyTorch + YOLO)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: sqlite:////app/data/dermacheck.db
+      MODEL_PATH: ml_models/best.pt
+      UPLOAD_DIR: static/uploads
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+    volumes:
+      - sqlite_data:/app/data
+      - face_uploads:/app/static/uploads
+      - ./backend/ml_models:/app/ml_models:ro
+    networks:
+      - dermacheck_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend Web (React + Vite)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    restart: unless-stopped
+    ports:
+      - "${WEB_HOST_PORT:-3000}:80"
+    depends_on:
+      - api
+    networks:
+      - dermacheck_network
+
+volumes:
+  sqlite_data:
+    driver: local
+  face_uploads:
+    driver: local
+
+networks:
+  dermacheck_network:
+    driver: bridge

@@ -1,0 +1,15 @@
+fastapi>=0.115.0,<1
+python-multipart>=0.0.9,<1
+uvicorn[standard]>=0.32.0,<1
+sqlalchemy>=2.0.36,<3
+pymysql>=1.1.1,<2
+cryptography>=43.0.0
+pydantic-settings>=2.6.0,<3
+python-dotenv>=1.0.1,<2
+bcrypt>=4.0.0,<5
+pillow>=10.0.0,<12
+ultralytics>=8.3.0,<9
+pytest>=7.4.3,<8
+pytest-cov>=4.1.0,<5
+httpx>=0.26.0,<1
+

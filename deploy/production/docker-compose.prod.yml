@@ -1,0 +1,44 @@
+# Producción — ejecutar desde la RAÍZ del repositorio:
+#
+#   cp deploy/production/env.production.example deploy/production/.env
+#   # Edita .env con contraseñas reales
+#   docker compose --env-file deploy/production/.env -f deploy/production/docker-compose.prod.yml up -d --build
+#
+# Salud: http://SERVIDOR:${API_HOST_PORT}/health
+# El contexto de build es ../../backend relativo a este archivo → carpeta backend del repo.
+# Datos persistentes (MySQL + subidas de imágenes): ./data/ respecto a deploy/production/
+
+name: dermacheck_prod
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?definir en .env}
+      MYSQL_USER: ${MYSQL_USER:?definir en .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?definir en .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?definir en .env}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 35s
+
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?definir en .env}
+    volumes:
+      - ./data/uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
