@@ -11,6 +11,7 @@ import { ConsentScreen } from './screens/ConsentScreen';
 // Lazy loading para pantallas secundarias
 const RegisterScreen = lazy(() => import('./screens/RegisterScreen').then(m => ({ default: m.RegisterScreen })));
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const InstructionsScreen = lazy(() => import('./screens/InstructionsScreen').then(m => ({ default: m.InstructionsScreen })));
 const ImagePickerScreen = lazy(() => import('./screens/ImagePickerScreen').then(m => ({ default: m.ImagePickerScreen })));
 const CameraScreen = lazy(() => import('./screens/CameraScreen').then(m => ({ default: m.CameraScreen })));
 const PreviewScreen = lazy(() => import('./screens/PreviewScreen').then(m => ({ default: m.PreviewScreen })));
@@ -46,6 +47,7 @@ function AnimatedRoutes() {
         <Route path="/register" element={<PublicRoute><RegisterScreen /></PublicRoute>} />
         <Route path="/consent" element={<ProtectedRoute><ConsentScreen /></ProtectedRoute>} />
         <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
+        <Route path="/instructions" element={<ProtectedRoute><InstructionsScreen /></ProtectedRoute>} />
         <Route path="/image-picker" element={<ProtectedRoute><ImagePickerScreen /></ProtectedRoute>} />
         <Route path="/camera" element={<ProtectedRoute><CameraScreen /></ProtectedRoute>} />
         <Route path="/preview" element={<ProtectedRoute><PreviewScreen /></ProtectedRoute>} />

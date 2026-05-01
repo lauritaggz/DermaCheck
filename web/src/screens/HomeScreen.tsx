@@ -21,7 +21,7 @@ export function HomeScreen() {
   }
 
   function startAnalysis() {
-    navigate('/image-picker');
+    navigate('/instructions');
   }
 
   return (

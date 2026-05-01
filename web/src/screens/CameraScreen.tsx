@@ -13,6 +13,7 @@ export function CameraScreen() {
   const [error, setError] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCameraSelector, setShowCameraSelector] = useState(false);
   const [imageQuality, setImageQuality] = useState<{
     brightness: number;
     sharpness: number;
@@ -251,6 +252,18 @@ export function CameraScreen() {
     setSelectedDeviceId(devices[nextIndex].deviceId);
   }
 
+  function selectCamera(deviceId: string) {
+    setSelectedDeviceId(deviceId);
+    setShowCameraSelector(false);
+  }
+
+  function getCameraLabel(device: MediaDeviceInfo, index: number): string {
+    if (device.label) {
+      return device.label;
+    }
+    return `Cámara ${index + 1}`;
+  }
+
   return (
     <PageTransition>
       <ScreenContainer className="bg-black">
@@ -271,6 +284,64 @@ export function CameraScreen() {
           </button>
 
         <div className="relative w-full max-w-4xl">
+          {/* Camera Selector */}
+          {devices.length > 1 && !isLoading && (
+            <div className="mb-4">
+              <div className="relative">
+                <button
+                  onClick={() => setShowCameraSelector(!showCameraSelector)}
+                  className="w-full bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg border-2 border-primary/20 hover:border-primary/40 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <div className="text-left">
+                      <p className="text-xs text-textMuted">Cámara seleccionada:</p>
+                      <p className="text-sm font-semibold text-text">
+                        {getCameraLabel(devices.find(d => d.deviceId === selectedDeviceId) || devices[0], devices.findIndex(d => d.deviceId === selectedDeviceId))}
+                      </p>
+                    </div>
+                  </div>
+                  <svg className={`w-5 h-5 text-primary transition-transform ${showCameraSelector ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showCameraSelector && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border-2 border-primary/20 overflow-hidden z-40 max-h-64 overflow-y-auto">
+                    {devices.map((device, index) => (
+                      <button
+                        key={device.deviceId}
+                        onClick={() => selectCamera(device.deviceId)}
+                        className={`w-full px-6 py-4 text-left hover:bg-primary/5 transition-colors flex items-center gap-3 ${
+                          device.deviceId === selectedDeviceId ? 'bg-primary/10' : ''
+                        }`}
+                      >
+                        <svg className={`w-5 h-5 ${device.deviceId === selectedDeviceId ? 'text-primary' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className={`text-sm font-medium ${device.deviceId === selectedDeviceId ? 'text-primary' : 'text-text'}`}>
+                            {getCameraLabel(device, index)}
+                          </p>
+                          {device.label && device.label.includes('USB') && (
+                            <p className="text-xs text-textMuted">Cámara externa</p>
+                          )}
+                        </div>
+                        {device.deviceId === selectedDeviceId && (
+                          <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="absolute top-4 left-4 right-4 p-4 bg-red-500 text-white rounded-lg z-10">
               {error}
