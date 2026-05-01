@@ -10,6 +10,17 @@ export function InstructionsScreen() {
     <PageTransition>
       <ScreenContainer>
         <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/home')}
+            className="absolute top-4 left-4 z-30 p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white shadow-lg border border-gray-200 hover:border-primary/30 transition-all group"
+            title="Volver al inicio"
+          >
+            <svg className="w-6 h-6 text-textSecondary group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+
           <div className="max-w-4xl w-full">
             {/* Header */}
             <div className="text-center mb-8">
