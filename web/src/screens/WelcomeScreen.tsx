@@ -22,9 +22,29 @@ export function WelcomeScreen() {
               </h1>
             </div>
             
-            <p className="text-xl md:text-2xl text-textSecondary max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl text-textSecondary max-w-2xl mx-auto mb-8">
               Análisis dermatológico inteligente con tecnología de vanguardia
             </p>
+
+            {/* What is DermaCheck */}
+            <div className="bg-gradient-to-br from-blue-50 to-primary/5 rounded-2xl p-6 max-w-3xl mx-auto border border-primary/10">
+              <div className="flex items-start gap-4 text-left">
+                <div className="flex-shrink-0">
+                  <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-text text-lg mb-2">¿Qué es DermaCheck?</h3>
+                  <p className="text-textSecondary leading-relaxed">
+                    <strong className="text-text">DermaCheck</strong> es tu asistente inteligente de cuidado facial. 
+                    Toma una foto de tu rostro y en segundos obtendrás un análisis con inteligencia artificial que identifica 
+                    afecciones como acné, manchas, arrugas o resequedad. Además, recibirás recomendaciones personalizadas 
+                    de productos y rutinas para mejorar tu piel.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Main Feature Card */}
