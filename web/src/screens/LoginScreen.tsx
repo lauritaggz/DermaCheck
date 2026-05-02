@@ -38,56 +38,56 @@ export function LoginScreen() {
 
   return (
     <PageTransition>
-      <ScreenContainer>
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg">
-          <h1 className="text-3xl font-bold text-primary mb-2">DermaCheck</h1>
-          <p className="text-textSecondary mb-6">
-            Inicia sesión con tu cuenta
-          </p>
+      <ScreenContainer maxWidth="lg" className="bg-gradient-to-br from-surface via-white to-secondary/20">
+        <div className="flex flex-col items-center justify-center min-h-screen py-6">
+          <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-borderLight">
+            <h1 className="text-2xl font-bold text-primary mb-1">DermaCheck</h1>
+            <p className="text-sm text-textSecondary mb-5">
+              Inicia sesión con tu cuenta
+            </p>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {error}
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit}>
-            <TextField
-              label="Correo electrónico"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
-            />
-            
-            <TextField
-              label="Contraseña"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            <form onSubmit={handleSubmit}>
+              <TextField
+                label="Correo electrónico"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+              />
+              
+              <TextField
+                label="Contraseña"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
 
-            <PrimaryButton
-              label={loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-              type="submit"
-              loading={loading}
-              disabled={loading}
-              className="w-full mb-4"
-            />
+              <PrimaryButton
+                label={loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+                type="submit"
+                loading={loading}
+                disabled={loading}
+                className="w-full mb-3 py-3 text-base"
+              />
 
-            <button
-              type="button"
-              onClick={() => navigate('/register')}
-              className="w-full text-primary text-sm font-medium hover:underline"
-            >
-              ¿No tienes cuenta? Regístrate
-            </button>
-          </form>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="w-full text-primary text-sm font-medium hover:underline"
+              >
+                ¿No tienes cuenta? Regístrate
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
-    </ScreenContainer>
+      </ScreenContainer>
     </PageTransition>
   );
 }
