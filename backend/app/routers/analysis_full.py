@@ -11,32 +11,25 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import AppUser, SkinAnalysis
-from app.schemas.analysis import AnalysisResponse, AnalysisResult, DetectionBox, ImageInfo
+from app.models import SkinAnalysis
 from app.schemas.diagnosis import DiagnosisResponse
-from app.services.diagnosis_service import generate_diagnosis
-from app.services.inference_service import run_inference
+from app.services.analysis_pipeline_service import build_diagnosis, run_yolo_detections
+from app.services.analysis_validation_service import (
+    ensure_user_exists,
+    parse_user_id,
+    persist_face_capture,
+    read_and_validate_image,
+)
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 UPLOAD_ROOT = Path(__file__).resolve().parent.parent.parent / "uploads" / "face_captures"
 ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 MAX_BYTES = 12 * 1024 * 1024
-
-
-def _parse_user_id(user_id: str) -> int:
-    uid = user_id.strip()
-    if not uid.isdigit():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="user_id inválido")
-    n = int(uid)
-    if n <= 0:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="user_id inválido")
-    return n
 
 
 @router.post("/face-analyze", response_model=DiagnosisResponse)
@@ -53,60 +46,29 @@ async def analyze_face_image(
     Registra el resultado en la base de datos para histórico (futuro).
     """
     start_time = time.perf_counter()
-    n = _parse_user_id(user_id)
+    n = parse_user_id(user_id)
 
     # Validar usuario existe
-    user_row = db.execute(select(AppUser).where(AppUser.id == n)).scalar_one_or_none()
-    if user_row is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    ensure_user_exists(db, n)
 
     # Validar formato y tamaño de imagen
-    if face_image.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            detail="Formato de imagen no soportado",
-        )
-
-    content = await face_image.read()
-    if not content:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Archivo vacío")
-    if len(content) > MAX_BYTES:
-        raise HTTPException(
-            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Imagen demasiado grande",
-        )
+    content = await read_and_validate_image(
+        face_image,
+        allowed_types=ALLOWED_TYPES,
+        max_bytes=MAX_BYTES,
+    )
 
     # Guardar imagen
-    user_dir = UPLOAD_ROOT / str(n)
-    user_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"capture_{ts}.jpg"
-    dest = user_dir / filename
-    dest.write_bytes(content)
-    rel_path = f"face_captures/{n}/{filename}"
+    filename, rel_path = persist_face_capture(content, n, UPLOAD_ROOT)
 
     # Ejecutar inferencia
-    try:
-        detections_raw = run_inference(content, conf=conf)
-    except FileNotFoundError as e:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
-        ) from e
-    except Exception as e:
-        raise HTTPException(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error en inferencia: {e!s}",
-        ) from e
-
-    # Convertir a modelos Pydantic
-    detections = [DetectionBox(**d) for d in detections_raw]
+    detections = run_yolo_detections(content, conf=conf)
     
     # Calcular tiempo de procesamiento
     processing_time_ms = (time.perf_counter() - start_time) * 1000
     
     # **NUEVO: Generar diagnóstico preliminar**
-    diagnosis = generate_diagnosis(detections)
+    diagnosis = build_diagnosis(detections)
 
     # Registrar en base de datos
     analysis_record = SkinAnalysis(

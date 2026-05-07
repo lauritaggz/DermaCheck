@@ -1,13 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PrimaryButton, ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
+import { evaluateImageBlob, type ImageQuality } from '../services/imageQualityService';
+import { loggerService } from '../services/loggerService';
 
 export function PreviewScreen() {
   const { pendingImage, setPendingImage } = useAppState();
   const navigate = useNavigate();
   const [analyzing, setAnalyzing] = useState(false);
+  const [imageQuality, setImageQuality] = useState<ImageQuality | null>(null);
+
+  useEffect(() => {
+    if (!pendingImage) return;
+    let active = true;
+    evaluateImageBlob(pendingImage.blob)
+      .then((quality) => {
+        if (active) setImageQuality(quality);
+      })
+      .catch(() => {
+        if (active) setImageQuality(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [pendingImage]);
 
   if (!pendingImage) {
     navigate('/home');
@@ -16,19 +34,24 @@ export function PreviewScreen() {
 
   function handleRetake() {
     if (!pendingImage) return;
-    
-    if (pendingImage.uri.startsWith('blob:')) {
-      URL.revokeObjectURL(pendingImage.uri);
-    }
+
+    loggerService.info('Usuario solicita recaptura de imagen');
+    URL.revokeObjectURL(pendingImage.objectUrl);
     setPendingImage(null);
-    navigate('/camera');
+    navigate('/quality-scan');
   }
 
   async function handleAnalyze() {
     if (!pendingImage) return;
     
     setAnalyzing(true);
-    navigate('/processing');
+    loggerService.info('Usuario confirma envío de imagen a análisis', {
+      width: pendingImage.width,
+      height: pendingImage.height,
+      source: pendingImage.source,
+      quality: imageQuality,
+    });
+    navigate('/analysis/conditions');
   }
 
   return (
@@ -47,7 +70,7 @@ export function PreviewScreen() {
                 <div className="w-full md:w-56 lg:w-64 flex-shrink-0">
                   <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-100">
                     <img
-                      src={pendingImage.uri}
+                      src={pendingImage.objectUrl}
                       alt="Imagen capturada"
                       className="w-full h-full object-cover"
                     />
@@ -57,10 +80,21 @@ export function PreviewScreen() {
                 {/* Contenido: texto y botones */}
                 <div className="flex-1 flex flex-col">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
-                    <p className="text-sm text-blue-800">
-                      <strong>✓ Imagen válida</strong><br />
-                      La imagen cumple con los requisitos para el análisis.
-                    </p>
+                    {imageQuality?.isGood ?? true ? (
+                      <p className="text-sm text-blue-800">
+                        <strong>✓ Imagen válida</strong><br />
+                        La imagen cumple con los requisitos para el análisis.
+                      </p>
+                    ) : (
+                      <div className="text-sm text-amber-800">
+                        <strong>Calidad mejorable</strong>
+                        <ul className="mt-1 space-y-1">
+                          {(imageQuality?.issues ?? []).map((issue, idx) => (
+                            <li key={idx}>- {issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-sm text-textSecondary space-y-2.5 mb-6 flex-1">
@@ -73,7 +107,7 @@ export function PreviewScreen() {
                   <div className="space-y-3">
                     <PrimaryButton
                       label={analyzing ? 'Analizando...' : 'Analizar con IA'}
-                      onPress={handleAnalyze}
+                      onClick={handleAnalyze}
                       loading={analyzing}
                       disabled={analyzing}
                       className="w-full py-3.5 text-base"
@@ -82,7 +116,7 @@ export function PreviewScreen() {
                     <PrimaryButton
                       label="Tomar otra foto"
                       variant="secondary"
-                      onPress={handleRetake}
+                      onClick={handleRetake}
                       disabled={analyzing}
                       className="w-full py-3 text-base"
                     />

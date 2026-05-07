@@ -1,216 +1,58 @@
-import { useRef, useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
+import { useCameraStream } from '../hooks/useCameraStream';
+import { useLiveImageQuality } from '../hooks/useLiveImageQuality';
+import { loggerService } from '../services/loggerService';
 
 export function CameraScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showCameraSelector, setShowCameraSelector] = useState(false);
-  const [imageQuality, setImageQuality] = useState<{
-    brightness: number;
-    sharpness: number;
-    contrast: number;
-    isGood: boolean;
-    issues: string[];
-  } | null>(null);
   const { setPendingImage } = useAppState();
   const navigate = useNavigate();
-  const qualityCheckInterval = useRef<number | null>(null);
+  const {
+    stream,
+    devices,
+    selectedDeviceId,
+    setSelectedDeviceId,
+    isLoading,
+    error,
+    stopStream,
+  } = useCameraStream();
+  const imageQuality = useLiveImageQuality({
+    videoRef,
+    isEnabled: Boolean(stream) && !isLoading,
+  });
 
   useEffect(() => {
-    async function initializeCamera() {
+    const videoElement = videoRef.current;
+    if (!videoElement || !stream) return;
+
+    videoElement.srcObject = stream;
+    videoElement.onloadedmetadata = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        mediaStream.getTracks().forEach(track => track.stop());
-        
-        const allDevices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
-        setDevices(videoDevices);
-        if (videoDevices.length > 0 && !selectedDeviceId) {
-          setSelectedDeviceId(videoDevices[0].deviceId);
-        }
+        await videoElement.play();
       } catch (err) {
-        console.error('Error al inicializar cámara:', err);
-        setError('No se pudo acceder a los dispositivos de cámara. Verifica los permisos.');
-        setIsLoading(false);
-      }
-    }
-    initializeCamera();
-  }, []);
-
-  useEffect(() => {
-    let currentStream: MediaStream | null = null;
-
-    async function startCamera() {
-      if (!selectedDeviceId) return;
-
-      setIsLoading(true);
-      try {
-        const constraints: MediaStreamConstraints = {
-          video: {
-            deviceId: { exact: selectedDeviceId },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-          audio: false,
-        };
-
-        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        currentStream = mediaStream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          
-          videoRef.current.onloadedmetadata = async () => {
-            try {
-              await videoRef.current?.play();
-              setIsLoading(false);
-              setError(null);
-            } catch (err) {
-              console.error('Error al reproducir el video:', err);
-              setError('Error al reproducir el video de la cámara');
-              setIsLoading(false);
-            }
-          };
-        }
-        setStream(mediaStream);
-      } catch (err: any) {
-        console.error('Error al acceder a la cámara:', err);
-        const errorMessage = err.name === 'NotAllowedError' 
-          ? 'Permisos de cámara denegados. Por favor, permite el acceso a la cámara.'
-          : 'No se pudo acceder a la cámara. Verifica los permisos del navegador.';
-        setError(errorMessage);
-        setIsLoading(false);
-      }
-    }
-
-    startCamera();
-
-    return () => {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
+        loggerService.warn('No se pudo reproducir el stream de video', {
+          error: err instanceof Error ? err.message : 'video_play_error',
+        });
       }
     };
-  }, [selectedDeviceId]);
-
-  useEffect(() => {
-    if (!videoRef.current || isLoading || !stream) return;
-
-    const analyzeImageQuality = () => {
-      if (!videoRef.current || !canvasRef.current) return;
-
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      let brightness = 0;
-      let rTotal = 0, gTotal = 0, bTotal = 0;
-      const pixelCount = data.length / 4;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        
-        brightness += (r + g + b) / 3;
-        rTotal += r;
-        gTotal += g;
-        bTotal += b;
-      }
-
-      brightness = brightness / pixelCount;
-      const avgR = rTotal / pixelCount;
-      const avgG = gTotal / pixelCount;
-      const avgB = bTotal / pixelCount;
-
-      let variance = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        const pixelBrightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-        variance += Math.pow(pixelBrightness - brightness, 2);
-      }
-      const contrast = Math.sqrt(variance / pixelCount);
-
-      const grayscale = new Uint8ClampedArray(canvas.width * canvas.height);
-      for (let i = 0; i < data.length; i += 4) {
-        grayscale[i / 4] = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      }
-
-      let sharpness = 0;
-      const w = canvas.width;
-      for (let y = 1; y < canvas.height - 1; y++) {
-        for (let x = 1; x < canvas.width - 1; x++) {
-          const idx = y * w + x;
-          const laplacian = Math.abs(
-            -grayscale[idx - w - 1] - grayscale[idx - w] - grayscale[idx - w + 1] -
-            grayscale[idx - 1] + 8 * grayscale[idx] - grayscale[idx + 1] -
-            grayscale[idx + w - 1] - grayscale[idx + w] - grayscale[idx + w + 1]
-          );
-          sharpness += laplacian;
-        }
-      }
-      sharpness = sharpness / ((canvas.width - 2) * (canvas.height - 2));
-
-      const issues: string[] = [];
-      let isGood = true;
-
-      if (brightness < 60) {
-        issues.push('Muy oscuro - mejora la iluminación');
-        isGood = false;
-      } else if (brightness > 200) {
-        issues.push('Muy brillante - reduce la luz');
-        isGood = false;
-      }
-
-      if (sharpness < 15) {
-        issues.push('Imagen borrosa - mantén la cámara estable');
-        isGood = false;
-      }
-
-      if (contrast < 20) {
-        issues.push('Bajo contraste - mejora el fondo o iluminación');
-        isGood = false;
-      }
-
-      setImageQuality({
-        brightness,
-        sharpness,
-        contrast,
-        isGood,
-        issues,
-      });
-    };
-
-    qualityCheckInterval.current = window.setInterval(analyzeImageQuality, 500);
-
-    return () => {
-      if (qualityCheckInterval.current) {
-        clearInterval(qualityCheckInterval.current);
-      }
-    };
-  }, [isLoading, stream]);
+  }, [stream]);
 
   async function captureImage() {
     if (!videoRef.current || !canvasRef.current) return;
     if (!imageQuality?.isGood) return;
 
     setCapturing(true);
+    loggerService.info('Inicio de captura de imagen desde cámara', {
+      selectedDeviceId,
+      quality: imageQuality,
+    });
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -224,22 +66,25 @@ export function CameraScreen() {
 
     canvas.toBlob((blob) => {
       if (!blob) {
-        setError('Error al capturar la imagen');
+        loggerService.error('Error al convertir canvas a blob');
         setCapturing(false);
         return;
       }
 
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       setPendingImage({
-        uri: url,
+        blob,
+        objectUrl,
         width: canvas.width,
         height: canvas.height,
         source: 'camera',
       });
 
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopStream();
+      loggerService.info('Captura de imagen completada', {
+        width: canvas.width,
+        height: canvas.height,
+      });
 
       navigate('/preview');
     }, 'image/jpeg', 0.95);
@@ -253,6 +98,10 @@ export function CameraScreen() {
   }
 
   function selectCamera(deviceId: string) {
+    loggerService.info('Cambio manual de cámara', {
+      previousDeviceId: selectedDeviceId,
+      nextDeviceId: deviceId,
+    });
     setSelectedDeviceId(deviceId);
     setShowCameraSelector(false);
   }
@@ -270,9 +119,7 @@ export function CameraScreen() {
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <button
             onClick={() => {
-              if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-              }
+              stopStream();
               navigate('/image-picker');
             }}
             className="absolute top-4 left-4 z-30 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
@@ -342,11 +189,11 @@ export function CameraScreen() {
             </div>
           )}
 
-          {error && (
+          {error ? (
             <div className="absolute top-4 left-4 right-4 p-4 bg-red-500 text-white rounded-lg z-10">
               {error}
             </div>
-          )}
+          ) : null}
 
           <div className="relative aspect-[3/4] bg-gray-900 rounded-2xl overflow-hidden">
             {isLoading && (

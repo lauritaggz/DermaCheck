@@ -4,45 +4,34 @@ import { ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
 import { ScanIcon } from '../components/Icons';
+import { useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
 
 export function ProcessingScreen() {
-  const { pendingImage, user, setAnalysisResult } = useAppState();
+  const { pendingImage, user, setAnalysisResult, setPendingImage } = useAppState();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const { analyzeFaceImage, error, clearError } = useDermatologyAnalysis();
 
   useEffect(() => {
     if (!pendingImage || !user) {
       navigate('/home');
       return;
     }
+    const currentImage = pendingImage;
+    const currentUser = user;
 
     async function runAnalysis() {
       try {
-        // Convertir la imagen a Blob
-        const blob = await fetch(pendingImage!.uri).then(r => r.blob());
-        
-        // Crear FormData
-        const formData = new FormData();
-        formData.append('face_image', blob, 'capture.jpg');
-        formData.append('user_id', user!.id);
-        formData.append('conf', '0.25');
-
-        // Enviar al backend (endpoint con diagnóstico)
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/api/v1/analysis/face-analyze`, {
-          method: 'POST',
-          body: formData,
+        const result = await analyzeFaceImage({
+          imageBlob: currentImage.blob,
+          userId: currentUser.id,
+          confidenceThreshold: 0.25,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.detail || 'Error al analizar la imagen');
+        if (!result) {
           return;
         }
 
-        const result = await response.json();
-        
         // Guardar resultado completo (con diagnóstico)
         setAnalysisResult(result);
 
@@ -50,9 +39,10 @@ export function ProcessingScreen() {
         setProgress(100);
 
         // Navegar a resultados
-        setTimeout(() => navigate('/results'), 500);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido al analizar la imagen');
+        setTimeout(() => navigate('/analysis/results'), 500);
+      } finally {
+        URL.revokeObjectURL(currentImage.objectUrl);
+        setPendingImage(null);
       }
     }
 
@@ -71,7 +61,7 @@ export function ProcessingScreen() {
     runAnalysis();
 
     return () => clearInterval(interval);
-  }, [pendingImage, user, navigate, setAnalysisResult]);
+  }, [pendingImage, user, navigate, setAnalysisResult, setPendingImage, analyzeFaceImage]);
 
   // Si hay error, mostrar botón para volver
   if (error) {
@@ -99,7 +89,10 @@ export function ProcessingScreen() {
                 </div>
 
                 <button
-                  onClick={() => navigate('/home')}
+                  onClick={() => {
+                    clearError();
+                    navigate('/home');
+                  }}
                   className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primaryDark transition-colors"
                 >
                   Volver al inicio

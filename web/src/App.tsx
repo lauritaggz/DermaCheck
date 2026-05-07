@@ -48,11 +48,15 @@ function AnimatedRoutes() {
         <Route path="/consent" element={<ProtectedRoute><ConsentScreen /></ProtectedRoute>} />
         <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
         <Route path="/instructions" element={<ProtectedRoute><InstructionsScreen /></ProtectedRoute>} />
-        <Route path="/image-picker" element={<ProtectedRoute><ImagePickerScreen /></ProtectedRoute>} />
-        <Route path="/camera" element={<ProtectedRoute><CameraScreen /></ProtectedRoute>} />
+        <Route path="/image-picker" element={<ProtectedRoute
+        ><ImagePickerScreen /></ProtectedRoute>} />
+        <Route path="/quality-scan" element={<ProtectedRoute><CameraScreen /></ProtectedRoute>} />
+        <Route path="/camera" element={<Navigate to="/quality-scan" replace />} />
         <Route path="/preview" element={<ProtectedRoute><PreviewScreen /></ProtectedRoute>} />
-        <Route path="/processing" element={<ProtectedRoute><ProcessingScreen /></ProtectedRoute>} />
-        <Route path="/results" element={<ProtectedRoute><ResultsScreen /></ProtectedRoute>} />
+        <Route path="/analysis/conditions" element={<ProtectedRoute><ProcessingScreen /></ProtectedRoute>} />
+        <Route path="/analysis/results" element={<ProtectedRoute><ResultsScreen /></ProtectedRoute>} />
+        <Route path="/processing" element={<Navigate to="/analysis/conditions" replace />} />
+        <Route path="/results" element={<Navigate to="/analysis/results" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
