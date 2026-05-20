@@ -4,26 +4,18 @@ type Variant = 'primary' | 'secondary' | 'ghost';
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
-  onPress?: () => void;
   loading?: boolean;
   variant?: Variant;
 }
 
 export function PrimaryButton({
   label,
-  onPress,
-  onClick,
   disabled,
   loading,
   variant = 'primary',
   className,
   ...rest
 }: Props) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (onClick) onClick(e);
-    if (onPress) onPress();
-  };
-
   const baseClasses = 'min-h-[52px] rounded-xl px-6 flex items-center justify-center font-medium transition-opacity disabled:opacity-45 active:opacity-92';
   
   const variantClasses = {
@@ -34,7 +26,6 @@ export function PrimaryButton({
 
   return (
     <button
-      onClick={handleClick}
       disabled={disabled || loading}
       className={`${baseClasses} ${variantClasses[variant]} ${className || ''}`}
       {...rest}
