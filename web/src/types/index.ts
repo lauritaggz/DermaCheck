@@ -25,7 +25,61 @@ export interface DiagnosisResult {
   consejos_generales: string[];
 }
 
-// Análisis completo con diagnóstico (respuesta del endpoint face-analyze)
+export interface ExpressionLinesBox {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface ExpressionLinesDetection {
+  class_name: string;
+  confidence: number;
+  box?: ExpressionLinesBox;
+}
+
+export interface ExpressionLinesResult {
+  detected: boolean;
+  count: number;
+  average_confidence: number;
+  model_name?: string;
+  task?: string;
+  detections: ExpressionLinesDetection[];
+  error?: string;
+}
+
+export interface CombinedDiagnosis {
+  has_affection_findings: boolean;
+  has_expression_lines: boolean;
+  summary: string;
+}
+
+/** Respuesta cruda de POST /api/v1/analysis/face-analyze-total */
+export interface CombinedFacialAnalysisApiResponse {
+  ok: boolean;
+  user_id: string;
+  image: {
+    filename: string;
+    path: string;
+    size_bytes: number;
+  };
+  analysis_type: string;
+  affections: {
+    analysis: {
+      model_conf_threshold?: number;
+      total_detections: number;
+      detections: FaceDetection[];
+      processing_time_ms?: number;
+    };
+    diagnosis: DiagnosisResult;
+  };
+  expression_lines: ExpressionLinesResult;
+  combined_diagnosis: CombinedDiagnosis;
+  timestamp: string;
+  processing_time_ms?: number;
+}
+
+// Análisis completo con diagnóstico (face-analyze o normalizado desde face-analyze-total)
 export interface AnalysisWithDiagnosis {
   ok: boolean;
   user_id: string;
@@ -42,6 +96,10 @@ export interface AnalysisWithDiagnosis {
   };
   diagnosis: DiagnosisResult;
   timestamp: string;
+  /** Presente cuando el análisis proviene del endpoint combinado (HU17). */
+  analysis_type?: string;
+  expression_lines?: ExpressionLinesResult;
+  combined_diagnosis?: CombinedDiagnosis;
 }
 
 export interface User {

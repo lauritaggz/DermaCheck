@@ -9,11 +9,9 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
+from app.config import settings
 from app.services.analysis_validation_service import read_and_validate_image
-from app.services.expression_lines_inference_service import (
-    DEFAULT_CONF,
-    expression_lines_inference_service,
-)
+from app.services.expression_lines_inference_service import expression_lines_inference_service
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -21,7 +19,10 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 @router.post("/expression-lines")
 async def analyze_expression_lines(
     file: UploadFile = File(..., description="Imagen facial para detectar líneas de expresión"),
-    conf: float = Form(DEFAULT_CONF, description="Umbral de confianza del modelo YOLO"),
+    conf: float | None = Form(
+        default=None,
+        description="Opcional; si no se envía, usa app/config.py expression_lines_conf_threshold",
+    ),
 ) -> dict[str, Any]:
     """
     Analiza líneas de expresión con el modelo best_wrinkle_yolov8m.pt.
@@ -30,7 +31,10 @@ async def analyze_expression_lines(
     image_bytes = await read_and_validate_image(file)
 
     try:
-        return expression_lines_inference_service.analyze_image(image_bytes, conf=conf)
+        threshold = (
+            conf if conf is not None else settings.expression_lines_conf_threshold
+        )
+        return expression_lines_inference_service.analyze_image(image_bytes, conf=threshold)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

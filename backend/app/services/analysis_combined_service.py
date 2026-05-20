@@ -12,8 +12,8 @@ from typing import Any
 from app.schemas.analysis import DetectionBox
 from app.schemas.diagnosis import DiagnosisResult
 from app.services.analysis_pipeline_service import build_diagnosis, run_yolo_detections
+from app.config import settings
 from app.services.expression_lines_inference_service import (
-    DEFAULT_CONF,
     TASK_NAME,
     expression_lines_inference_service,
 )
@@ -37,11 +37,16 @@ class CombinedFaceAnalysisResult:
 
 def run_expression_lines_safe(
     image_bytes: bytes,
-    conf: float = DEFAULT_CONF,
+    conf: float | None = None,
 ) -> dict[str, Any]:
+    threshold = (
+        conf if conf is not None else settings.expression_lines_conf_threshold
+    )
     """Ejecuta líneas de expresión; ante fallo devuelve payload degradado sin romper dermatología."""
     try:
-        return expression_lines_inference_service.analyze_image(image_bytes, conf=conf)
+        return expression_lines_inference_service.analyze_image(
+            image_bytes, conf=threshold
+        )
     except Exception as exc:
         logger.warning(
             "Análisis de líneas de expresión no disponible: %s", exc, exc_info=True
@@ -87,9 +92,14 @@ def build_combined_diagnosis(
 def analyze_face_total(
     image_bytes: bytes,
     *,
-    derm_conf: float = 0.25,
-    expression_lines_conf: float = DEFAULT_CONF,
+    derm_conf: float = 0.85,
+    expression_lines_conf: float | None = None,
 ) -> CombinedFaceAnalysisResult:
+    lines_conf = (
+        expression_lines_conf
+        if expression_lines_conf is not None
+        else settings.expression_lines_conf_threshold
+    )
     """
     Ejecuta ambos modelos sobre la misma imagen.
     Si dermatología falla, propaga la excepción (mismo comportamiento que face-analyze).
@@ -97,7 +107,12 @@ def analyze_face_total(
     """
     detections = run_yolo_detections(image_bytes, conf=derm_conf)
     diagnosis = build_diagnosis(detections)
-    expression_lines = run_expression_lines_safe(image_bytes, conf=expression_lines_conf)
+    expression_lines = run_expression_lines_safe(image_bytes, conf=lines_conf)
+    logger.info(
+        "Análisis combinado: derm_conf=%.2f expression_lines_conf=%.2f",
+        derm_conf,
+        lines_conf,
+    )
 
     affections = {
         "analysis": {

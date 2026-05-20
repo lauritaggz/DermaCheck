@@ -1,4 +1,46 @@
-import type { FaceDetection } from '../types';
+import type {
+  AnalysisWithDiagnosis,
+  CombinedFacialAnalysisApiResponse,
+  FaceDetection,
+} from '../types';
+
+/**
+ * Normaliza la respuesta de face-analyze-total al formato usado por la UI (face-analyze).
+ */
+export function mapCombinedFacialAnalysis(
+  payload: CombinedFacialAnalysisApiResponse,
+): AnalysisWithDiagnosis {
+  const { affections, expression_lines, combined_diagnosis, processing_time_ms } = payload;
+
+  return {
+    ok: payload.ok,
+    user_id: payload.user_id,
+    image: payload.image,
+    analysis: {
+      model_conf_threshold: affections.analysis.model_conf_threshold ?? 0.25,
+      total_detections: affections.analysis.total_detections,
+      detections: affections.analysis.detections ?? [],
+      processing_time_ms:
+        processing_time_ms ?? affections.analysis.processing_time_ms ?? 0,
+    },
+    diagnosis: affections.diagnosis,
+    timestamp: payload.timestamp,
+    analysis_type: payload.analysis_type,
+    expression_lines,
+    combined_diagnosis,
+  };
+}
+
+export function isCombinedFacialAnalysisResponse(
+  payload: unknown,
+): payload is CombinedFacialAnalysisApiResponse {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'affections' in payload &&
+    'expression_lines' in payload
+  );
+}
 
 /**
  * Mapea el nombre de clase del modelo YOLO a una etiqueta en español.

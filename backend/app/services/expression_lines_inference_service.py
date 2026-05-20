@@ -14,13 +14,14 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from app.config import settings
+
 logger = logging.getLogger("dermacheck.expression_lines")
 
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_MODEL_PATH = _BACKEND_ROOT / "ml_models" / "best_wrinkle_yolov8m.pt"
 MODEL_FILENAME = "best_wrinkle_yolov8m.pt"
 TASK_NAME = "expression_lines"
-DEFAULT_CONF = 0.20
 
 
 class ExpressionLinesInferenceService:
@@ -29,12 +30,16 @@ class ExpressionLinesInferenceService:
     def __init__(
         self,
         model_path: Path | str | None = None,
-        default_conf: float = DEFAULT_CONF,
+        default_conf: float | None = None,
     ) -> None:
         env_path = os.environ.get("DERMACHECK_EXPRESSION_LINES_MODEL_PATH")
         resolved = env_path or model_path or DEFAULT_MODEL_PATH
         self._model_path = Path(resolved)
-        self._default_conf = default_conf
+        self._default_conf = (
+            default_conf
+            if default_conf is not None
+            else settings.expression_lines_conf_threshold
+        )
         self._model: Any | None = None
         self._lock = threading.Lock()
 

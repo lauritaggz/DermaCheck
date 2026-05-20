@@ -39,6 +39,23 @@ Un **archivo** `dermacheck.db` en la carpeta `backend/`. No hace falta instalar 
 
 ---
 
+## Configuración de análisis (HU17)
+
+Umbral de confianza para **líneas de expresión** (única fuente en backend: `app/config.py`):
+
+- Valor por defecto: `0.20`
+- Sobrescribir en `backend/.env`:
+
+  `DERMACHECK_EXPRESSION_LINES_CONF=0.25`
+
+Servicios y endpoints leen ese valor cuando el cliente **no** envía `expression_lines_conf` en el formulario.
+
+El frontend (flujo del tótem) ya no envía ese campo por defecto; basta con cambiar `config.py` o `.env` y reiniciar uvicorn.
+
+Si pruebas en Swagger y rellenas `expression_lines_conf` manualmente, ese valor sí sobrescribe la config.
+
+---
+
 ## Requisitos
 
 - Python 3.11+

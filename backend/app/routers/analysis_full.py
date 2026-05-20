@@ -14,6 +14,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import SkinAnalysis
 from app.schemas.combined_analysis import CombinedFacialAnalysisResponse
@@ -112,8 +113,9 @@ async def analyze_face_image_total(
     user_id: str = Form(...),
     face_image: UploadFile = File(...),
     conf: float = Form(0.25, description="Umbral de confianza del modelo dermatológico"),
-    expression_lines_conf: float = Form(
-        0.20, description="Umbral de confianza para líneas de expresión"
+    expression_lines_conf: float | None = Form(
+        default=None,
+        description="Opcional; si no se envía, usa app/config.py expression_lines_conf_threshold",
     ),
     db: Session = Depends(get_db),
 ) -> CombinedFacialAnalysisResponse:
@@ -133,10 +135,15 @@ async def analyze_face_image_total(
 
     filename, rel_path = persist_face_capture(content, n, UPLOAD_ROOT)
 
+    effective_lines_conf = (
+        expression_lines_conf
+        if expression_lines_conf is not None
+        else settings.expression_lines_conf_threshold
+    )
     combined = analyze_face_total(
         content,
         derm_conf=conf,
-        expression_lines_conf=expression_lines_conf,
+        expression_lines_conf=effective_lines_conf,
     )
 
     processing_time_ms = (time.perf_counter() - start_time) * 1000
