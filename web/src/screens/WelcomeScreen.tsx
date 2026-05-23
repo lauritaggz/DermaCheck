@@ -53,14 +53,14 @@ export function WelcomeScreen() {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                   <PrimaryButton
                     label="Iniciar Sesión"
-                    onPress={() => navigate('/login')}
+                    onClick={() => navigate('/login')}
                     className="text-base py-3 px-6 shadow-lg hover:shadow-xl"
                   />
                   
                   <PrimaryButton
                     label="Crear Cuenta"
                     variant="secondary"
-                    onPress={() => navigate('/register')}
+                    onClick={() => navigate('/register')}
                     className="text-base py-3 px-6"
                   />
                 </div>

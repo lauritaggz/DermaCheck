@@ -1,5 +1,9 @@
 import { useCallback, useState } from 'react';
 import type { AnalysisWithDiagnosis } from '../types';
+import {
+  isCombinedFacialAnalysisResponse,
+  mapCombinedFacialAnalysis,
+} from '../services/analysisMappers';
 import { apiUrl } from '../utils/api';
 import { loggedFetch } from '../utils/loggedFetch';
 import { parseApiErrorMessage } from '../utils/apiErrors';
@@ -9,6 +13,8 @@ interface AnalyzeParams {
   imageBlob: Blob;
   userId: string;
   confidenceThreshold?: number;
+  /** Si se omite, el backend usa app/config.py (expression_lines_conf_threshold). */
+  expressionLinesConf?: number;
 }
 
 interface UseDermatologyAnalysisResult {
@@ -30,6 +36,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     imageBlob,
     userId,
     confidenceThreshold = 0.25,
+    expressionLinesConf,
   }: AnalyzeParams): Promise<AnalysisWithDiagnosis | null> => {
     setError(null);
     setIsRunning(true);
@@ -44,11 +51,14 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       formData.append('face_image', imageBlob, 'capture.jpg');
       formData.append('user_id', userId);
       formData.append('conf', confidenceThreshold.toString());
+      if (expressionLinesConf !== undefined) {
+        formData.append('expression_lines_conf', expressionLinesConf.toString());
+      }
 
-      const response = await loggedFetch(apiUrl('/api/v1/analysis/face-analyze'), {
+      const response = await loggedFetch(apiUrl('/api/v1/analysis/face-analyze-total'), {
         method: 'POST',
         body: formData,
-        operationName: 'face_analyze',
+        operationName: 'face_analyze_total',
       });
 
       if (!response.ok) {
@@ -62,10 +72,15 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
         return null;
       }
 
-      const payload = (await response.json()) as AnalysisWithDiagnosis;
-      loggerService.info('Análisis dermatológico finalizado', {
+      const raw = await response.json();
+      const payload: AnalysisWithDiagnosis = isCombinedFacialAnalysisResponse(raw)
+        ? mapCombinedFacialAnalysis(raw)
+        : (raw as AnalysisWithDiagnosis);
+
+      loggerService.info('Análisis facial combinado finalizado', {
         userId,
         totalDetections: payload.analysis.total_detections,
+        expressionLinesDetected: payload.expression_lines?.detected ?? false,
         processingTimeMs: payload.analysis.processing_time_ms,
       });
       return payload;

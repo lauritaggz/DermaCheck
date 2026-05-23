@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { PrimaryButton, ScreenContainer } from '../components';
+import { PrimaryButton } from '../components';
+import { ExpressionLinesFindingCard } from '../components/ExpressionLinesFindingCard';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
 import { ChartIcon, DocumentIcon, AlertIcon, ShieldIcon } from '../components/Icons';
 import type { DetectedCondition } from '../types';
+import { apiUrl } from '../utils/api';
 
 export function ResultsScreen() {
   const { analysisResult } = useAppState();
@@ -21,7 +23,11 @@ export function ResultsScreen() {
     return null;
   }
 
-  const { diagnosis, image } = analysisResult;
+  const { diagnosis, image, expression_lines, combined_diagnosis } = analysisResult;
+
+  const showExpressionLinesCard = Boolean(expression_lines?.detected);
+  const findingsCount =
+    diagnosis.condiciones_detectadas.length + (showExpressionLinesCard ? 1 : 0);
 
   function handleNewAnalysis() {
     navigate('/image-picker');
@@ -152,7 +158,7 @@ export function ResultsScreen() {
                   
                   <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 border-2 border-gray-200 shadow-inner">
                     <img
-                      src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/uploads/${image.path}`}
+                      src={apiUrl(`/uploads/${image.path}`)}
                       alt="Imagen analizada"
                       className="w-full h-full object-cover"
                     />
@@ -171,7 +177,7 @@ export function ResultsScreen() {
                       </div>
                     </div>
                     <p className="text-sm mb-3 leading-relaxed">
-                      {diagnosis.resumen_general}
+                      {combined_diagnosis?.summary ?? diagnosis.resumen_general}
                     </p>
                     <div className="pt-3 border-t border-gray-300">
                       <p className="text-xs font-medium opacity-80">
@@ -196,7 +202,8 @@ export function ResultsScreen() {
                         Afecciones Detectadas
                       </h2>
                       <p className="text-sm text-gray-600 mt-0.5">
-                        {diagnosis.condiciones_detectadas.length} condición{diagnosis.condiciones_detectadas.length !== 1 ? 'es' : ''} identificada{diagnosis.condiciones_detectadas.length !== 1 ? 's' : ''}
+                        {findingsCount} hallazgo{findingsCount !== 1 ? 's' : ''} identificado
+                        {findingsCount !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
@@ -281,6 +288,19 @@ export function ResultsScreen() {
                         </div>
                       </div>
                     )}
+
+                    {showExpressionLinesCard && expression_lines && (
+                      <ExpressionLinesFindingCard
+                        expressionLines={expression_lines}
+                        cardIndex={diagnosis.condiciones_detectadas.length + 1}
+                      />
+                    )}
+
+                    {expression_lines?.error && !expression_lines.detected && (
+                      <p className="text-sm text-gray-500 text-center py-2">
+                        No fue posible analizar líneas de expresión en esta ocasión.
+                      </p>
+                    )}
                   </div>
               </div>
 
@@ -352,13 +372,13 @@ export function ResultsScreen() {
             <div className="flex flex-col sm:flex-row gap-4 pt-6">
               <PrimaryButton
                 label="Nuevo Análisis"
-                onPress={handleNewAnalysis}
+                onClick={handleNewAnalysis}
                 className="flex-1 text-lg py-5 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
               />
               <PrimaryButton
                 label="Volver al Inicio"
                 variant="secondary"
-                onPress={() => navigate('/home')}
+                onClick={() => navigate('/home')}
                 className="flex-1 text-lg py-5 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
               />
             </div>

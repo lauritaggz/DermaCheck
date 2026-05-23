@@ -175,7 +175,7 @@ export function InstructionsScreen() {
             <div className="text-center">
               <PrimaryButton
                 label="Comenzar Análisis"
-                onPress={() => navigate('/image-picker')}
+                onClick={() => navigate('/image-picker')}
                 className="text-base py-3.5 px-10 shadow-lg hover:shadow-xl"
               />
               <p className="text-xs text-textMuted mt-3">

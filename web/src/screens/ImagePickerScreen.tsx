@@ -19,26 +19,27 @@ export function ImagePickerScreen() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const url = event.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        setPendingImage({
-          uri: url,
-          width: img.width,
-          height: img.height,
-          source: 'gallery',
-        });
-        navigate('/preview');
-      };
-      img.src = url;
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      setPendingImage({
+        blob: file,
+        objectUrl,
+        width: img.width,
+        height: img.height,
+        source: 'gallery',
+      });
+      navigate('/preview');
     };
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      alert('No se pudo procesar la imagen seleccionada');
+    };
+    img.src = objectUrl;
   }
 
   function openCamera() {
-    navigate('/camera');
+    navigate('/quality-scan');
   }
 
   function openGallery() {

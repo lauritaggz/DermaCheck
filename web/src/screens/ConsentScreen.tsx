@@ -118,7 +118,7 @@ export function ConsentScreen() {
 
         <PrimaryButton
           label="Registrar aceptación y continuar"
-          onPress={handleContinue}
+          onClick={handleContinue}
           loading={loading}
           disabled={!bothChecked || loading}
           className="w-full"

@@ -5,7 +5,10 @@ backend/dermacheck.db
 backend/*.db
 backend/venv/
 backend/uploads/
+# Pesos YOLO locales (no versionar): best.pt + HU17 best_wrinkle_yolov8m.pt
 backend/ml_models/*.pt
+backend/ml_models/best_wrinkle_yolov8m.pt
+backend/logs/
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env

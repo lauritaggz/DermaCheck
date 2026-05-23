@@ -99,7 +99,7 @@ export function HomeScreen() {
                     
                     <PrimaryButton
                       label="Iniciar Análisis"
-                      onPress={startAnalysis}
+                      onClick={startAnalysis}
                       className="w-full text-base py-3 shadow-lg hover:shadow-xl"
                     />
                   </div>

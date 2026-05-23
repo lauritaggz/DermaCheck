@@ -7,7 +7,15 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.models import create_tables
-from app.routers import analysis_full, analysis_inference, analysis_upload, auth, consent, logs
+from app.routers import (
+    analysis_expression_lines,
+    analysis_full,
+    analysis_inference,
+    analysis_upload,
+    auth,
+    consent,
+    logs,
+)
 from app.seed_legal_documents import seed_legal_documents
 from app.database import SessionLocal
 
@@ -37,6 +45,7 @@ app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(consent.router, prefix=settings.api_prefix)
 app.include_router(analysis_upload.router, prefix=settings.api_prefix)
 app.include_router(analysis_inference.router, prefix=settings.api_prefix)
+app.include_router(analysis_expression_lines.router, prefix=settings.api_prefix)
 app.include_router(analysis_full.router, prefix=settings.api_prefix)
 app.include_router(logs.router, prefix=settings.api_prefix)
 
