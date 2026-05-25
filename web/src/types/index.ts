@@ -6,6 +6,8 @@ export interface DetectedCondition {
   descripcion: string;
   advertencias: string[];
   color_ui: string;
+  recomendaciones: string[];
+  sugiere_consulta_dermatologo: boolean;
 }
 
 export interface MensajeSeveridad {

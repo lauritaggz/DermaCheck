@@ -130,7 +130,14 @@ def generate_diagnosis(detections: list[DetectionBox]) -> DiagnosisResult:
         # Calcular confianza promedio
         confianza_promedio = sum(d.confidence for d in dets) / len(dets)
         
-        # Crear condición detectada (solo diagnóstico, sin recomendaciones específicas)
+        # Evaluar sugerencia específica de consulta dermatológica
+        requisitos = condition_data["requiere_evaluacion_si"]
+        sugiere_consulta = (
+            confianza_promedio > requisitos["confianza_mayor_a"]
+            and len(dets) >= requisitos["cantidad_detecciones"]
+        )
+
+        # Crear condición detectada (diagnóstico con recomendaciones y consulta)
         condicion = DetectedCondition(
             id=condition_data["id"],
             label=condition_data["label_es"],
@@ -139,6 +146,8 @@ def generate_diagnosis(detections: list[DetectionBox]) -> DiagnosisResult:
             descripcion=condition_data["descripcion_medica"],  # Descripción médica completa
             advertencias=condition_data["advertencias"],
             color_ui=condition_data["color_ui"],
+            recomendaciones=condition_data["recomendaciones"],
+            sugiere_consulta_dermatologo=sugiere_consulta,
         )
         condiciones.append(condicion)
     

@@ -28,9 +28,15 @@ from app.main import app
 from app.models import AppUser, Base, SkinAnalysis
 
 
+from sqlalchemy.pool import StaticPool
+
 # Configuración de base de datos de prueba en memoria
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -46,7 +52,7 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def test_db():
     """Crea las tablas antes de cada test y las elimina después."""
     Base.metadata.create_all(bind=engine)
@@ -152,7 +158,7 @@ class TestAnalysisInferenceEndpoint:
         assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
 
 
-class TestAnalysisFull Endpoint:
+class TestAnalysisFullEndpoint:
     """Pruebas para el endpoint /api/v1/analysis/face-analyze"""
 
     def test_face_analyze_success(
@@ -201,6 +207,16 @@ class TestAnalysisFull Endpoint:
         assert saved_analysis.total_detections == analysis_data["total_detections"]
         assert saved_analysis.model_conf_threshold == 0.30
         assert saved_analysis.processing_time_ms > 0
+
+        # Verificar diagnóstico (HU08)
+        assert "diagnosis" in data
+        diag = data["diagnosis"]
+        assert "condiciones_detectadas" in diag
+        for cond in diag["condiciones_detectadas"]:
+            assert "recomendaciones" in cond
+            assert isinstance(cond["recomendaciones"], list)
+            assert "sugiere_consulta_dermatologo" in cond
+            assert isinstance(cond["sugiere_consulta_dermatologo"], bool)
 
     def test_face_analyze_user_not_found(self, client: TestClient, sample_image):
         """Test: Error cuando el usuario no existe."""
@@ -290,12 +306,10 @@ class TestErrorHandling:
     def test_model_not_found_error(self, client: TestClient, sample_image, monkeypatch):
         """Test: Error cuando el modelo no se encuentra."""
         # Simular que el modelo no existe
-        from app.services import inference_service
-        
         def mock_run_inference(*args, **kwargs):
             raise FileNotFoundError("Modelo no encontrado")
         
-        monkeypatch.setattr(inference_service, "run_inference", mock_run_inference)
+        monkeypatch.setattr("app.routers.analysis_inference.run_inference", mock_run_inference)
         
         response = client.post(
             "/api/v1/analysis/inference",
@@ -307,12 +321,10 @@ class TestErrorHandling:
 
     def test_inference_generic_error(self, client: TestClient, sample_image, monkeypatch):
         """Test: Error genérico durante la inferencia."""
-        from app.services import inference_service
-        
         def mock_run_inference(*args, **kwargs):
             raise RuntimeError("Error en procesamiento")
         
-        monkeypatch.setattr(inference_service, "run_inference", mock_run_inference)
+        monkeypatch.setattr("app.routers.analysis_inference.run_inference", mock_run_inference)
         
         response = client.post(
             "/api/v1/analysis/inference",
