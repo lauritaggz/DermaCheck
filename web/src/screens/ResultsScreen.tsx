@@ -4,7 +4,7 @@ import { PrimaryButton } from '../components';
 import { ExpressionLinesFindingCard } from '../components/ExpressionLinesFindingCard';
 import { PageTransition } from '../components/PageTransition';
 import { useAppState } from '../context/AppContext';
-import { ChartIcon, DocumentIcon, AlertIcon, ShieldIcon } from '../components/Icons';
+import { ChartIcon, DocumentIcon, AlertIcon, ShieldIcon, SparklesIcon } from '../components/Icons';
 import type { DetectedCondition } from '../types';
 import { apiUrl } from '../utils/api';
 
@@ -303,6 +303,98 @@ export function ResultsScreen() {
                     )}
                   </div>
               </div>
+
+                {/* RECOMENDACIONES PERSONALIZADAS POR AFECCIÓN (HU08) */}
+                {diagnosis.condiciones_detectadas.length > 0 && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl space-y-6">
+                    <div className="flex items-center gap-3 mb-2 pb-4 border-b-2 border-gray-100">
+                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md">
+                        <SparklesIcon className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Recomendaciones Personalizadas
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          Sugerencias de cuidado y hábitos adaptadas a tu perfil
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ADVERTENCIA DE ORIENTACIÓN COSMÉTICA (Evitar receta médica) */}
+                    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200 flex gap-4 items-start shadow-sm">
+                      <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <ShieldIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm mb-1">
+                          Nota de Orientación Cosmética y Educativa
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          <strong>IMPORTANTE:</strong> Las siguientes sugerencias son de carácter exclusivamente orientativo y cosmético general. <strong>No constituyen una receta médica ni tratamiento dermatológico definitivo</strong>. Si experimentas molestias persistentes, dolor o si tu condición no mejora, te recomendamos agendar una consulta formal con un dermatólogo certificado.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* LISTADO DE RECOMENDACIONES POR AFECCIÓN */}
+                    <div className="space-y-6">
+                      {diagnosis.condiciones_detectadas.map((condicion: DetectedCondition) => {
+                        if (!condicion.recomendaciones || condicion.recomendaciones.length === 0) return null;
+                        
+                        return (
+                          <div 
+                            key={`rec-${condicion.id}`} 
+                            className="bg-white rounded-2xl border-2 border-gray-100 shadow-md p-6 hover:shadow-lg transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
+                              <div className="flex items-center gap-3">
+                                <span className={`w-3.5 h-3.5 rounded-full ${
+                                  condicion.color_ui === 'red' ? 'bg-red-500' :
+                                  condicion.color_ui === 'amber' ? 'bg-amber-500' :
+                                  condicion.color_ui === 'green' ? 'bg-green-500' : 'bg-blue-500'
+                                }`} />
+                                <h3 className="font-bold text-lg text-gray-900">
+                                  Cuidado para {condicion.label}
+                                </h3>
+                              </div>
+
+                              {/* Alerta de consulta médica específica si corresponde */}
+                              {condicion.sugiere_consulta_dermatologo && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 border border-amber-200 text-amber-800 shadow-sm animate-pulse">
+                                  🩺 Consulta médica sugerida
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Mostrar alerta informativa detallada de consulta médica si corresponde */}
+                            {condicion.sugiere_consulta_dermatologo && (
+                              <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex gap-3 items-start text-amber-950">
+                                <span className="text-lg">🩺</span>
+                                <div className="text-xs leading-relaxed">
+                                  <strong>Recomendación especial:</strong> Debido al nivel o cantidad de detecciones de <strong>{condicion.label.toLowerCase()}</strong> en tu rostro, te sugerimos programar una valoración presencial con un dermatólogo para obtener un diagnóstico formal y un plan terapéutico específico.
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Lista de sugerencias */}
+                            <ul className="space-y-3">
+                              {condicion.recomendaciones.map((rec, recIdx) => (
+                                <li key={recIdx} className="flex gap-3 items-start group">
+                                  <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-full flex items-center justify-center border border-indigo-200 mt-0.5 group-hover:scale-110 transition-transform">
+                                    <span className="text-[11px] font-bold text-indigo-700">{recIdx + 1}</span>
+                                  </div>
+                                  <span className="text-sm text-gray-700 leading-relaxed font-medium">
+                                    {rec}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Consejos Generales */}
                 {diagnosis.consejos_generales.length > 0 && (

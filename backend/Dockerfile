@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     pkg-config \
     curl \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

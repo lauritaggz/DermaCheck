@@ -17,6 +17,8 @@ class DetectedCondition(BaseModel):
     descripcion: str = Field(..., description="Descripción médica de la condición")
     advertencias: list[str] = Field(default_factory=list, description="Advertencias médicas")
     color_ui: str = Field(..., description="Color para UI (blue, red, amber, green)")
+    recomendaciones: list[str] = Field(default_factory=list, description="Recomendaciones de cuidado y seguimiento")
+    sugiere_consulta_dermatologo: bool = Field(False, description="Sugerir consulta médica específica")
 
 
 class DiagnosisResult(BaseModel):
