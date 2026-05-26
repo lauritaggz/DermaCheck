@@ -14,14 +14,14 @@ Aplicación web desarrollada con React + Vite + TypeScript para análisis dermat
 
 ## 📋 Requisitos
 
-- Node.js 18+ y npm
-- Backend FastAPI corriendo en el puerto 8000
+- Node.js 18+ y pnpm
+- Backend FastAPI corriendo en el puerto 8001 (o el configurado)
 
 ## 🛠️ Instalación
 
 ```bash
 # Instalar dependencias
-npm install
+pnpm install
 
 # Configurar variables de entorno
 cp .env.example .env
@@ -40,7 +40,7 @@ VITE_API_BASE_URL=http://192.168.0.10:8000
 
 ```bash
 # Iniciar servidor de desarrollo
-npm run dev
+pnpm dev
 
 # La aplicación estará disponible en http://localhost:5173
 ```
@@ -49,10 +49,10 @@ npm run dev
 
 ```bash
 # Generar build optimizado
-npm run build
+pnpm build
 
 # Previsualizar build
-npm run preview
+pnpm preview
 ```
 
 ## 📱 PWA
