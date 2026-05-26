@@ -13,6 +13,7 @@ name: dermacheck_prod
 services:
   db:
     image: mysql:8.0
+    container_name: dermacheck_db_prod
     restart: always
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:?definir en .env}
@@ -22,23 +23,45 @@ services:
     volumes:
       - ./data/mysql:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 15
       start_period: 35s
+    networks:
+      - dermacheck_network
 
   api:
     build:
       context: ../../backend
       dockerfile: Dockerfile
+    container_name: dermacheck_api_prod
     restart: always
-    ports:
-      - "${API_HOST_PORT:-8000}:8000"
     environment:
       DATABASE_URL: ${DATABASE_URL:?definir en .env}
+      MODEL_PATH: ml_models/best.pt
+      UPLOAD_DIR: static/uploads
+      CORS_ORIGINS: http://localhost:3005,http://localhost:3000,${FRONTEND_NETLIFY_URL:-}
     volumes:
-      - ./data/uploads:/app/uploads
+      - ./data/uploads:/app/static/uploads
+      - ../../backend/ml_models:/app/ml_models:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - dermacheck_network
+      - red_multiproposito
+
+networks:
+  dermacheck_network:
+    driver: bridge
+  red_multiproposito:
+    external: true
+    name: red_multiproposito
+
