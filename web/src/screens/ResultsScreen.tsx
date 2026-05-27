@@ -98,7 +98,7 @@ export function ResultsScreen() {
             </div>
 
             {/* DISCLAIMER PRINCIPAL - Banner superior */}
-            <div className="mb-6 bg-gradient-to-r from-amber-50 to-amber-100 rounded-2xl p-6 border-l-4 border-amber-500 shadow-md">
+            <div className="mb-6 bg-gradient-to-r from-amber-50 to-amber-100 rounded-2xl p-4 sm:p-6 border-l-4 border-amber-500 shadow-md">
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -118,7 +118,7 @@ export function ResultsScreen() {
 
             {/* ADVERTENCIA SI REQUIERE EVALUACIÓN */}
             {diagnosis.requiere_evaluacion && (
-              <div className="mb-6 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl p-6 border-l-4 border-red-600 shadow-md animate-pulse">
+              <div className="mb-6 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl p-4 sm:p-6 border-l-4 border-red-600 shadow-md animate-pulse">
                 <div className="flex gap-4">
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
@@ -178,7 +178,7 @@ export function ResultsScreen() {
               
               {/* Image Column - Más estrecha */}
               <div className={`lg:col-span-4 ${activeTab === 'diagnosis' ? 'block' : 'hidden lg:block'}`}>
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-gray-200 shadow-xl sticky top-6">
+                <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 border border-gray-200 shadow-xl sticky top-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export function ResultsScreen() {
               <div className="lg:col-span-8 space-y-6">
                 
                 {/* Condiciones Detectadas */}
-                <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl ${activeTab === 'diagnosis' ? 'block' : 'hidden lg:block'}`}>
+                <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-8 border border-gray-200 shadow-xl ${activeTab === 'diagnosis' ? 'block' : 'hidden lg:block'}`}>
                   <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100">
                     <div className={`w-12 h-12 bg-gradient-to-br ${getSeverityColor(diagnosis.severidad_general)} rounded-2xl flex items-center justify-center shadow-md`}>
                       <ChartIcon className="w-7 h-7 text-white" />
@@ -249,32 +249,42 @@ export function ResultsScreen() {
                         <div key={condicion.id} className="group hover:scale-[1.01] transition-transform duration-200">
                           {/* Header de la condición - Diseño horizontal mejorado */}
                           <div className={`relative overflow-hidden rounded-2xl border-2 shadow-md hover:shadow-lg transition-shadow ${getConditionColorClasses(condicion.color_ui)}`}>
-                            <div className="flex items-stretch">
-                              {/* Barra lateral con número */}
-                              <div className={`w-16 bg-gradient-to-b ${getSeverityColor(diagnosis.severidad_general)} flex items-center justify-center flex-shrink-0`}>
+                            <div className="flex flex-col sm:flex-row items-stretch">
+                              {/* Barra lateral con número - visible en sm+ */}
+                              <div className={`hidden sm:flex w-16 bg-gradient-to-b ${getSeverityColor(diagnosis.severidad_general)} items-center justify-center flex-shrink-0`}>
                                 <span className="text-3xl font-bold text-white">{idx + 1}</span>
                               </div>
                               
                               {/* Contenido principal */}
-                              <div className="flex-1 p-5">
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="flex-1">
-                                    <h3 className="font-bold text-xl mb-2">{condicion.label}</h3>
+                              <div className="flex-1 p-4 sm:p-5">
+                                {/* Cabecera para móvil con número */}
+                                <div className="flex sm:hidden items-center gap-2 mb-3">
+                                  <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getSeverityColor(diagnosis.severidad_general)} flex items-center justify-center text-white font-bold text-base shadow-sm`}>
+                                    {idx + 1}
+                                  </span>
+                                  <h3 className="font-bold text-lg text-gray-900">{condicion.label}</h3>
+                                </div>
+
+                                <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+                                  <div className="flex-1 w-full">
+                                    <h3 className="hidden sm:block font-bold text-xl mb-2">{condicion.label}</h3>
                                     <p className="text-sm leading-relaxed opacity-90">
                                       {condicion.descripcion}
                                     </p>
                                   </div>
                                   
                                   {/* Estadísticas */}
-                                  <div className="flex-shrink-0 text-right bg-white/50 rounded-xl p-4 min-w-[140px]">
-                                    <div className="text-4xl font-bold leading-none mb-1">
-                                      {Math.round(condicion.confianza_promedio * 100)}%
+                                  <div className="w-full md:w-auto flex-shrink-0 text-left md:text-right bg-white/50 rounded-xl p-4 min-w-0 md:min-w-[140px] flex md:flex-col justify-between items-center md:items-end gap-2 md:gap-0">
+                                    <div>
+                                      <div className="text-3xl md:text-4xl font-bold leading-none mb-1">
+                                        {Math.round(condicion.confianza_promedio * 100)}%
+                                      </div>
+                                      <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wide opacity-75">
+                                        Confianza
+                                      </p>
                                     </div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide opacity-75 mb-2">
-                                      Confianza
-                                    </p>
-                                    <div className="pt-2 border-t border-current/20">
-                                      <p className="text-sm font-medium">
+                                    <div className="pt-0 md:pt-2 border-l md:border-l-0 md:border-t border-current/20 pl-3 md:pl-0">
+                                      <p className="text-xs md:text-sm font-medium">
                                         {condicion.cantidad_detecciones} detección{condicion.cantidad_detecciones > 1 ? 'es' : ''}
                                       </p>
                                     </div>
@@ -306,7 +316,7 @@ export function ResultsScreen() {
                         </div>
                       ))
                     ) : (
-                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 shadow-md p-8 text-center">
+                      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 shadow-md p-4 sm:p-8 text-center">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-green-200/30 rounded-full blur-2xl"></div>
                         <div className="relative">
                           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
@@ -341,7 +351,7 @@ export function ResultsScreen() {
 
                 {/* RECOMENDACIONES PERSONALIZADAS POR AFECCIÓN (HU08) */}
                 {diagnosis.condiciones_detectadas.length > 0 && (
-                  <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl space-y-6 ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
+                  <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-4 sm:p-8 border border-gray-200 shadow-xl space-y-6 ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
                     <div className="flex items-center gap-3 mb-2 pb-4 border-b-2 border-gray-100">
                       <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md">
                         <SparklesIcon className="w-7 h-7 text-white" />
@@ -379,7 +389,7 @@ export function ResultsScreen() {
                         return (
                           <div 
                             key={`rec-${condicion.id}`} 
-                            className="bg-white rounded-2xl border-2 border-gray-100 shadow-md p-6 hover:shadow-lg transition-all duration-200"
+                            className="bg-white rounded-2xl border-2 border-gray-100 shadow-md p-4 sm:p-6 hover:shadow-lg transition-all duration-200"
                           >
                             <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-100">
                               <div className="flex items-center gap-3">
@@ -433,7 +443,7 @@ export function ResultsScreen() {
 
                 {/* Consejos Generales */}
                 {diagnosis.consejos_generales.length > 0 && (
-                  <div className={`bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-3xl p-8 border border-blue-200 shadow-xl ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
+                  <div className={`bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-3xl p-4 sm:p-8 border border-blue-200 shadow-xl ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
                     <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-blue-100">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-md">
                         <DocumentIcon className="w-7 h-7 text-white" />
@@ -462,7 +472,7 @@ export function ResultsScreen() {
                 )}
 
                 {/* Disclaimer Footer */}
-                <div className={`bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-md ${activeTab === 'details' ? 'block' : 'hidden lg:block'}`}>
+                <div className={`bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-4 sm:p-6 border border-gray-200 shadow-md ${activeTab === 'details' ? 'block' : 'hidden lg:block'}`}>
                   <div className="flex gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center">
