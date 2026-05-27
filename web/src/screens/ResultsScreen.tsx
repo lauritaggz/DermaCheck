@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PrimaryButton } from '../components';
 import { ExpressionLinesFindingCard } from '../components/ExpressionLinesFindingCard';
 import { PageTransition } from '../components/PageTransition';
@@ -11,6 +11,7 @@ import { apiUrl } from '../utils/api';
 export function ResultsScreen() {
   const { analysisResult } = useAppState();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'diagnosis' | 'recommendations' | 'details'>('diagnosis');
 
   // Si no hay resultados, redirigir
   useEffect(() => {
@@ -138,11 +139,45 @@ export function ResultsScreen() {
               </div>
             )}
 
+            {/* TABS DE ACCESO RÁPIDO PARA MÓVILES (Oculto en desktop lg) */}
+            <div className="lg:hidden mb-6 bg-white/70 backdrop-blur-md rounded-2xl p-1.5 border border-gray-200 shadow-sm flex gap-1 sticky top-3 z-30">
+              <button
+                onClick={() => setActiveTab('diagnosis')}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
+                  activeTab === 'diagnosis'
+                    ? 'bg-gradient-to-r from-primary to-primaryDark text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                }`}
+              >
+                📊 Diagnóstico
+              </button>
+              <button
+                onClick={() => setActiveTab('recommendations')}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
+                  activeTab === 'recommendations'
+                    ? 'bg-gradient-to-r from-primary to-primaryDark text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                }`}
+              >
+                ✨ Recomendaciones
+              </button>
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
+                  activeTab === 'details'
+                    ? 'bg-gradient-to-r from-primary to-primaryDark text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                }`}
+              >
+                🩺 Detalles
+              </button>
+            </div>
+
             {/* Main Content Grid - Diseño widescreen */}
             <div className="grid lg:grid-cols-12 gap-6 mb-8">
               
               {/* Image Column - Más estrecha */}
-              <div className="lg:col-span-4">
+              <div className={`lg:col-span-4 ${activeTab === 'diagnosis' ? 'block' : 'hidden lg:block'}`}>
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-gray-200 shadow-xl sticky top-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
@@ -192,7 +227,7 @@ export function ResultsScreen() {
               <div className="lg:col-span-8 space-y-6">
                 
                 {/* Condiciones Detectadas */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl">
+                <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl ${activeTab === 'diagnosis' ? 'block' : 'hidden lg:block'}`}>
                   <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-100">
                     <div className={`w-12 h-12 bg-gradient-to-br ${getSeverityColor(diagnosis.severidad_general)} rounded-2xl flex items-center justify-center shadow-md`}>
                       <ChartIcon className="w-7 h-7 text-white" />
@@ -306,7 +341,7 @@ export function ResultsScreen() {
 
                 {/* RECOMENDACIONES PERSONALIZADAS POR AFECCIÓN (HU08) */}
                 {diagnosis.condiciones_detectadas.length > 0 && (
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl space-y-6">
+                  <div className={`bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-200 shadow-xl space-y-6 ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
                     <div className="flex items-center gap-3 mb-2 pb-4 border-b-2 border-gray-100">
                       <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md">
                         <SparklesIcon className="w-7 h-7 text-white" />
@@ -398,7 +433,7 @@ export function ResultsScreen() {
 
                 {/* Consejos Generales */}
                 {diagnosis.consejos_generales.length > 0 && (
-                  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-3xl p-8 border border-blue-200 shadow-xl">
+                  <div className={`bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-3xl p-8 border border-blue-200 shadow-xl ${activeTab === 'recommendations' ? 'block' : 'hidden lg:block'}`}>
                     <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-blue-100">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-md">
                         <DocumentIcon className="w-7 h-7 text-white" />
@@ -427,7 +462,7 @@ export function ResultsScreen() {
                 )}
 
                 {/* Disclaimer Footer */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-md">
+                <div className={`bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-md ${activeTab === 'details' ? 'block' : 'hidden lg:block'}`}>
                   <div className="flex gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center">

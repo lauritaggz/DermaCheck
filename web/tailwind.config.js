@@ -18,7 +18,8 @@ export default {
         borderLight: '#F0F0F0',
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        title: ['Outfit', 'sans-serif'],
       },
       screens: {
         'xs': '480px',
