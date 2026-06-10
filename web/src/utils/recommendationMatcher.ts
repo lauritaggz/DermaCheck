@@ -16,12 +16,23 @@ export function getMatchedRecommendations(
   );
 }
 
+/**
+ * Ingredientes únicos en orden de aparición (fuente para queries del scraper).
+ */
 export function collectUniqueIngredients(recommendations: Recommendation[]): string[] {
-  const ingredients = new Set<string>();
-  recommendations.forEach((rec) => {
-    rec.suggestedIngredients.forEach((ing) => ingredients.add(ing));
-  });
-  return Array.from(ingredients);
+  const ingredients: string[] = [];
+  const seen = new Set<string>();
+
+  for (const rec of recommendations) {
+    for (const ing of rec.suggestedIngredients ?? []) {
+      const key = ing.toLowerCase().trim();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      ingredients.push(ing);
+    }
+  }
+
+  return ingredients;
 }
 
 export function groupRecommendationsByTime(recommendations: Recommendation[]) {

@@ -3,6 +3,10 @@ import type { Recommendation } from '../types';
 /**
  * Recomendaciones educativas genéricas (sin marcas), asociadas por claves de hallazgo
  * usadas al construir el informe a partir de las detecciones del modelo.
+ *
+ * Para búsqueda de productos (HU22), solo se usan `suggestedIngredients`.
+ * Cada ingrediente se traduce a una query corta en productQueryBuilder.ts
+ * (ej. "niacinamida" → "niacinamida facial"). Los tipos de producto son solo orientación UI.
  */
 export const skinAnalysisRecommendations: Recommendation[] = [
   {

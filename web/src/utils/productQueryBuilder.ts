@@ -1,18 +1,37 @@
 import type { DetectedCondition, Recommendation } from '../types';
+import { collectUniqueIngredients } from './recommendationMatcher';
 
 const MAX_QUERIES = 3;
-const MAX_QUERY_LENGTH = 120;
-const MAX_INGREDIENTS_PER_QUERY = 2;
 
-const FALLBACK_INGREDIENT_PATTERNS: Array<{ pattern: RegExp; query: string }> = [
-  { pattern: /ácido salicílico|acido salicilico/i, query: 'limpiador facial ácido salicílico' },
-  { pattern: /niacinamida/i, query: 'niacinamida facial' },
-  { pattern: /protector solar|fps|spf/i, query: 'protector solar facial' },
-  { pattern: /ceramidas/i, query: 'crema ceramidas' },
-  { pattern: /ácido hialurónico|acido hialuronico/i, query: 'hidratante ácido hialurónico' },
-  { pattern: /pantenol/i, query: 'crema pantenol facial' },
-  { pattern: /vitamina c/i, query: 'serum vitamina c facial' },
-  { pattern: /peróxido de benzoilo|peroxido de benzoilo/i, query: 'gel peróxido benzoilo facial' },
+/**
+ * Términos cortos probados en FarmaCompara (HU22 / scraper-test).
+ * Clave normalizada sin tildes → query de búsqueda.
+ */
+const INGREDIENT_SCRAPER_QUERIES: Record<string, string> = {
+  'acido salicilico': 'acido salicilico facial',
+  niacinamida: 'niacinamida facial',
+  'acido hialuronico': 'acido hialuronico facial',
+  ceramidas: 'ceramidas facial',
+  pantenol: 'pantenol facial',
+  'vitamina c': 'vitamina c facial',
+  'acido azelaico': 'acido azelaico facial',
+  'protector solar spf 50+': 'protector solar facial',
+  'protector solar': 'protector solar facial',
+  'avena coloidal': 'avena coloidal facial',
+  'peroxido de benzoilo': 'peroxido de benzoilo facial',
+};
+
+const INGREDIENT_TEXT_PATTERNS: Array<{ pattern: RegExp; ingredientKey: string }> = [
+  { pattern: /ácido salicílico|acido salicilico/i, ingredientKey: 'acido salicilico' },
+  { pattern: /niacinamida/i, ingredientKey: 'niacinamida' },
+  { pattern: /protector solar|fps|spf/i, ingredientKey: 'protector solar' },
+  { pattern: /ceramidas/i, ingredientKey: 'ceramidas' },
+  { pattern: /ácido hialurónico|acido hialuronico/i, ingredientKey: 'acido hialuronico' },
+  { pattern: /pantenol/i, ingredientKey: 'pantenol' },
+  { pattern: /vitamina c/i, ingredientKey: 'vitamina c' },
+  { pattern: /peróxido de benzoilo|peroxido de benzoilo/i, ingredientKey: 'peroxido de benzoilo' },
+  { pattern: /ácido azelaico|acido azelaico/i, ingredientKey: 'acido azelaico' },
+  { pattern: /avena coloidal/i, ingredientKey: 'avena coloidal' },
 ];
 
 export function normalizeTextForQuery(text: string): string {
@@ -39,47 +58,39 @@ export function dedupeQueries(queries: string[]): string[] {
   return result;
 }
 
-function truncateQuery(query: string): string {
-  if (query.length <= MAX_QUERY_LENGTH) return query;
-  return query.slice(0, MAX_QUERY_LENGTH).trim();
-}
+/**
+ * Convierte un componente dermatocosmético en una query corta para el scraper.
+ * Una sola query por ingrediente (sin combinar tipos de producto).
+ */
+export function ingredientToScraperQuery(ingredient: string): string {
+  const key = normalizeTextForQuery(ingredient);
+  const mapped = INGREDIENT_SCRAPER_QUERIES[key];
+  if (mapped) return mapped;
 
-function buildQueriesForRecommendation(recommendation: Recommendation): string[] {
-  const types = recommendation.suggestedProductTypes ?? [];
-  const ingredients = recommendation.suggestedIngredients ?? [];
-  const mainIngredients = ingredients.slice(0, MAX_INGREDIENTS_PER_QUERY);
-  const queries: string[] = [];
-
-  if (types.length > 0) {
-    for (const type of types) {
-      queries.push(truncateQuery([type, ...mainIngredients].join(' ')));
-    }
-    return queries;
+  if (key.includes('protector') || key.includes('spf') || key.includes('fps')) {
+    return 'protector solar facial';
   }
 
-  if (ingredients.length > 0) {
-    queries.push(truncateQuery(ingredients.slice(0, 3).join(' ')));
-  }
-
-  return queries;
+  return `${ingredient.trim()} facial`;
 }
 
 /**
- * Construye queries para el scraper HU22 a partir de recomendaciones estructuradas.
+ * Construye queries solo desde suggestedIngredients del catálogo estructurado.
+ * No combina tipos de producto ni múltiples activos en la misma búsqueda.
  */
 export function buildProductQueriesFromRecommendations(
   recommendations: Recommendation[],
 ): string[] {
-  const queries = recommendations.flatMap(buildQueriesForRecommendation);
+  const ingredients = collectUniqueIngredients(recommendations);
+  const queries = ingredients.map(ingredientToScraperQuery);
 
   return dedupeQueries(queries)
-    .sort((a, b) => b.length - a.length)
+    .sort((a, b) => a.length - b.length)
     .slice(0, MAX_QUERIES);
 }
 
 /**
- * Fallback cuando no hay recomendaciones estructuradas: extrae ingredientes
- * mencionados en los textos del backend (conditions_catalog).
+ * Fallback: extrae componentes mencionados en recomendaciones de texto del backend.
  */
 export function buildFallbackQueriesFromConditions(
   conditions: DetectedCondition[],
@@ -90,16 +101,20 @@ export function buildFallbackQueriesFromConditions(
 
   if (!combinedText.trim()) return [];
 
-  const queries = FALLBACK_INGREDIENT_PATTERNS
-    .filter(({ pattern }) => pattern.test(combinedText))
-    .map(({ query }) => query);
+  const queries: string[] = [];
+
+  for (const { pattern, ingredientKey } of INGREDIENT_TEXT_PATTERNS) {
+    if (!pattern.test(combinedText)) continue;
+    const mapped = INGREDIENT_SCRAPER_QUERIES[ingredientKey];
+    if (mapped) queries.push(mapped);
+  }
 
   return dedupeQueries(queries).slice(0, MAX_QUERIES);
 }
 
 /**
  * Resuelve las queries finales según prioridad:
- * externalQueries > structured recommendations > backend text fallback.
+ * externalQueries > ingredientes del catálogo > textos del backend.
  */
 export function resolveProductSearchQueries(params: {
   externalQueries?: string[];
