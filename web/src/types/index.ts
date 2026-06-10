@@ -125,6 +125,28 @@ export interface Recommendation {
   suggestedProductTypes: string[];
 }
 
+/** Precios por farmacia para productos sugeridos en resultados. */
+export interface ProductPriceMap {
+  ahumada?: number | null;
+  salcobrand?: number | null;
+  cruz_verde?: number | null;
+}
+
+/** Producto sugerido proveniente del scraper HU22 en la pantalla de resultados. */
+export interface SuggestedProduct {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  precios: ProductPriceMap;
+  precio_minimo?: number | null;
+  farmacia_minimo?: 'ahumada' | 'salcobrand' | 'cruz_verde' | null;
+  url?: string | null;
+  fuente?: string;
+  fecha_consulta?: string;
+  matchedQuery?: string;
+  relevanceScore?: number;
+}
+
 /** Fila devuelta por el backend (#116) o reconstruida en modo local. */
 export interface DocumentAcceptanceRecord {
   documentSlug: string;

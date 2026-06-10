@@ -17,6 +17,7 @@ const CameraScreen = lazy(() => import('./screens/CameraScreen').then(m => ({ de
 const PreviewScreen = lazy(() => import('./screens/PreviewScreen').then(m => ({ default: m.PreviewScreen })));
 const ProcessingScreen = lazy(() => import('./screens/ProcessingScreen').then(m => ({ default: m.ProcessingScreen })));
 const ResultsScreen = lazy(() => import('./screens/ResultsScreen').then(m => ({ default: m.ResultsScreen })));
+const ScraperTestScreen = lazy(() => import('./screens/ScraperTestScreen').then(m => ({ default: m.ScraperTestScreen })));
 
 function LoadingFallback() {
   return (
@@ -57,6 +58,8 @@ function AnimatedRoutes() {
         <Route path="/analysis/results" element={<ProtectedRoute><ResultsScreen /></ProtectedRoute>} />
         <Route path="/processing" element={<Navigate to="/analysis/conditions" replace />} />
         <Route path="/results" element={<Navigate to="/analysis/results" replace />} />
+        {/* HU22: página aislada de prueba del scraper; no enlazada al menú principal */}
+        <Route path="/scraper-test" element={<ScraperTestScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

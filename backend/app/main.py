@@ -18,9 +18,14 @@ from app.routers import (
     auth,
     consent,
     logs,
+    products,
 )
 from app.seed_legal_documents import seed_legal_documents
+from app.services.product_search.fallback import seed_product_fallback_catalog
 from app.database import SessionLocal
+
+
+from app.services.product_search_service import product_search_service
 
 
 @asynccontextmanager
@@ -29,9 +34,11 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         seed_legal_documents(db)
+        seed_product_fallback_catalog(db)
     finally:
         db.close()
     yield
+    await product_search_service.close()
 
 
 import os
@@ -66,6 +73,7 @@ app.include_router(analysis_inference.router, prefix=settings.api_prefix)
 app.include_router(analysis_expression_lines.router, prefix=settings.api_prefix)
 app.include_router(analysis_full.router, prefix=settings.api_prefix)
 app.include_router(logs.router, prefix=settings.api_prefix)
+app.include_router(products.router, prefix="/api/products")
 
 # Servir archivos estáticos (imágenes subidas)
 uploads_path = Path(__file__).parent.parent / "uploads"

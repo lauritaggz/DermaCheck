@@ -74,6 +74,36 @@ class UserDocumentAcceptance(Base):
     document: Mapped[LegalDocument] = relationship(back_populates="acceptances")
 
 
+class ProductSearchCache(Base):
+    """Caché de búsquedas HU22 (SQLite/PostgreSQL). Evita repetir scraping."""
+
+    __tablename__ = "product_search_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    query_normalized: Mapped[str] = mapped_column(String(512), unique=True, index=True)
+    response_json: Mapped[str] = mapped_column(Text())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class ProductFallback(Base):
+    """Catálogo de respaldo cuando el scraper no está disponible (HU22)."""
+
+    __tablename__ = "product_fallback_catalog"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    query_keywords: Mapped[str] = mapped_column(String(512), index=True)
+    product_json: Mapped[str] = mapped_column(Text())
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+
 class SkinAnalysis(Base):
     """Registro de análisis de piel realizados por los usuarios."""
 
