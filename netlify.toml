@@ -1,0 +1,19 @@
+# DermaCheck — despliegue del frontend (carpeta web/) en Netlify.
+# Conecta el repositorio en Netlify; este archivo define build y publicación.
+#
+# Variables en Netlify → Site configuration → Environment variables (opcional):
+#   VITE_API_BASE_URL  → URL pública del backend (p. ej. https://dermacheck.duckdns.org)
+# Si no las defines, se usan los valores de web/.env.production en el build.
+#
+# En el servidor del backend, añade la URL de Netlify a CORS_ORIGINS
+# (ver deploy/production/env.production.example → FRONTEND_NETLIFY_URL).
+
+[build]
+  base = "web"
+  command = "npm ci && npm run build"
+  publish = "dist"
+  # No reconstruir si solo cambió el backend u otras carpetas.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web/ netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "20"
