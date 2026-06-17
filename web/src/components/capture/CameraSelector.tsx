@@ -50,7 +50,7 @@ export function CameraSelector({
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-white/50 uppercase">Todas las cámaras</p>
+        <p className="text-xs font-semibold text-white/50 normal-case">Todas las cámaras</p>
         <button
           type="button"
           onClick={onRefresh}

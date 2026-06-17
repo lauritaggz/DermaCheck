@@ -241,6 +241,84 @@ class TestAnalysisFullEndpoint:
         assert "inválido" in response.json()["detail"].lower()
 
 
+class TestAnalysisDoubleEndpoint:
+    """Pruebas para POST /api/v1/analysis/face-analyze-total-double"""
+
+    def test_face_analyze_total_double_success(
+        self, client: TestClient, test_user: AppUser, sample_image, monkeypatch
+    ):
+        """Test: análisis doble fusiona detecciones y omite líneas de expresión."""
+        call_count = {"n": 0}
+
+        def mock_run_inference(content, conf):
+            call_count["n"] += 1
+            label = "acne" if call_count["n"] == 1 else "rosacea"
+            return [
+                {
+                    "class_id": 0,
+                    "class_name": label,
+                    "confidence": 0.9,
+                    "bbox": [0.1, 0.1, 0.2, 0.2],
+                }
+            ]
+
+        monkeypatch.setattr(
+            "app.services.analysis_pipeline_service.run_inference",
+            mock_run_inference,
+        )
+
+        img1 = io.BytesIO(sample_image.getvalue())
+        img2 = io.BytesIO(sample_image.getvalue())
+
+        response = client.post(
+            "/api/v1/analysis/face-analyze-total-double",
+            data={"user_id": str(test_user.id), "conf": "0.25"},
+            files=[
+                ("face_image_1", ("face1.jpg", img1, "image/jpeg")),
+                ("face_image_2", ("face2.jpg", img2, "image/jpeg")),
+            ],
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["analysis_type"] == "combined_facial_analysis_double"
+        assert data["images_processed"] == 2
+        assert len(data["images"]) == 2
+        assert data["expression_lines"]["detected"] is False
+        assert data["expression_lines"]["detections"] == []
+        assert data["combined_diagnosis"]["has_expression_lines"] is False
+        assert data["affections"]["analysis"]["total_detections"] == 2
+        assert len(data["affections"]["analysis"]["detections"]) == 2
+
+    def test_face_analyze_total_double_missing_image(
+        self, client: TestClient, test_user: AppUser, sample_image
+    ):
+        """Test: error cuando falta la segunda imagen."""
+        response = client.post(
+            "/api/v1/analysis/face-analyze-total-double",
+            data={"user_id": str(test_user.id), "conf": "0.25"},
+            files={"face_image_1": ("face1.jpg", sample_image, "image/jpeg")},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_face_analyze_total_double_invalid_image_type(
+        self, client: TestClient, test_user: AppUser, sample_image
+    ):
+        """Test: error claro cuando una imagen tiene formato inválido."""
+        response = client.post(
+            "/api/v1/analysis/face-analyze-total-double",
+            data={"user_id": str(test_user.id), "conf": "0.25"},
+            files=[
+                ("face_image_1", ("face1.jpg", sample_image, "image/jpeg")),
+                ("face_image_2", ("face2.txt", b"not an image", "text/plain")),
+            ],
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "una de las imágenes enviadas" in response.json()["detail"].lower()
+
+
 class TestDetectionValidation:
     """Pruebas para validar la estructura de las detecciones."""
 

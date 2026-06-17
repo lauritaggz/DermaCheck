@@ -47,7 +47,7 @@ export function SkinConditionCard({ condition, index }: Props) {
 
           <div className={`flex-shrink-0 ${bgColor} rounded-xl p-4 min-w-[110px] text-center border border-white`}>
             <div className="text-3xl font-bold text-brand-700 leading-none">{confidencePercent}%</div>
-            <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wide mt-1">Confianza</p>
+            <p className="text-xs font-semibold text-textMuted normal-case mt-1">Confianza</p>
             <p className="text-xs text-textSecondary mt-2">
               {condition.cantidad_detecciones} detección{condition.cantidad_detecciones !== 1 ? 'es' : ''}
             </p>

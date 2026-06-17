@@ -52,11 +52,17 @@ async def read_and_validate_image(
     return content
 
 
-def persist_face_capture(content: bytes, user_id: int, upload_root: Path) -> tuple[str, str]:
+def persist_face_capture(
+    content: bytes,
+    user_id: int,
+    upload_root: Path,
+    *,
+    suffix: str = "",
+) -> tuple[str, str]:
     user_dir = upload_root / str(user_id)
     user_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"capture_{timestamp}.jpg"
+    filename = f"capture_{timestamp}{suffix}.jpg"
     destination = user_dir / filename
     destination.write_bytes(content)
     relative_path = f"face_captures/{user_id}/{filename}"

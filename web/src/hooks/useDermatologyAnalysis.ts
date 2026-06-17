@@ -17,10 +17,18 @@ interface AnalyzeParams {
   expressionLinesConf?: number;
 }
 
+interface AnalyzeDoubleParams {
+  imageBlob1: Blob;
+  imageBlob2: Blob;
+  userId: string;
+  confidenceThreshold?: number;
+}
+
 interface UseDermatologyAnalysisResult {
   isRunning: boolean;
   error: string | null;
   analyzeFaceImage: (params: AnalyzeParams) => Promise<AnalysisWithDiagnosis | null>;
+  analyzeFaceImagesDouble: (params: AnalyzeDoubleParams) => Promise<AnalysisWithDiagnosis | null>;
   clearError: () => void;
 }
 
@@ -97,10 +105,78 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     }
   }, []);
 
+  const analyzeFaceImagesDouble = useCallback(async ({
+    imageBlob1,
+    imageBlob2,
+    userId,
+    confidenceThreshold = 0.25,
+  }: AnalyzeDoubleParams): Promise<AnalysisWithDiagnosis | null> => {
+    setError(null);
+    setIsRunning(true);
+    loggerService.info('Inicio de análisis dermatológico doble', {
+      userId,
+      confidenceThreshold,
+      sizeBytes1: imageBlob1.size,
+      sizeBytes2: imageBlob2.size,
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append('face_image_1', imageBlob1, 'capture_1.jpg');
+      formData.append('face_image_2', imageBlob2, 'capture_2.jpg');
+      formData.append('user_id', userId);
+      formData.append('conf', confidenceThreshold.toString());
+
+      const response = await loggedFetch(
+        apiUrl('/api/v1/analysis/face-analyze-total-double'),
+        {
+          method: 'POST',
+          body: formData,
+          operationName: 'face_analyze_total_double',
+        },
+      );
+
+      if (!response.ok) {
+        const message = await parseApiErrorMessage(response);
+        setError(message);
+        loggerService.warn('Análisis dermatológico doble retornó error HTTP', {
+          userId,
+          message,
+          status: response.status,
+        });
+        return null;
+      }
+
+      const raw = await response.json();
+      const payload: AnalysisWithDiagnosis = isCombinedFacialAnalysisResponse(raw)
+        ? mapCombinedFacialAnalysis(raw)
+        : (raw as AnalysisWithDiagnosis);
+
+      loggerService.info('Análisis facial doble finalizado', {
+        userId,
+        totalDetections: payload.analysis.total_detections,
+        imagesProcessed: payload.images_processed ?? 2,
+        processingTimeMs: payload.analysis.processing_time_ms,
+      });
+      return payload;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido al analizar las imágenes';
+      setError(message);
+      loggerService.error('Fallo de red o ejecución en análisis dermatológico doble', {
+        userId,
+        message,
+      });
+      return null;
+    } finally {
+      setIsRunning(false);
+    }
+  }, []);
+
   return {
     isRunning,
     error,
     analyzeFaceImage,
+    analyzeFaceImagesDouble,
     clearError,
   };
 }

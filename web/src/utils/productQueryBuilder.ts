@@ -4,21 +4,33 @@ import { collectUniqueIngredients } from './recommendationMatcher';
 const MAX_QUERIES = 3;
 
 /**
- * Términos cortos probados en FarmaCompara (HU22 / scraper-test).
- * Clave normalizada sin tildes → query de búsqueda.
+ * Términos cortos para FarmaCompara: ingrediente o tipo de producto, nunca diagnóstico.
  */
 const INGREDIENT_SCRAPER_QUERIES: Record<string, string> = {
-  'acido salicilico': 'acido salicilico facial',
+  'acido salicilico': 'acido salicilico limpiador',
   niacinamida: 'niacinamida facial',
-  'acido hialuronico': 'acido hialuronico facial',
-  ceramidas: 'ceramidas facial',
-  pantenol: 'pantenol facial',
-  'vitamina c': 'vitamina c facial',
+  'acido hialuronico': 'acido hialuronico hidratante',
+  ceramidas: 'crema hidratante ceramidas',
+  pantenol: 'crema pantenol facial',
+  'vitamina c': 'serum vitamina c facial',
   'acido azelaico': 'acido azelaico facial',
-  'protector solar spf 50+': 'protector solar facial',
+  'protector solar spf 50+': 'protector solar facial spf 50',
+  'protector solar mineral': 'protector solar mineral facial',
   'protector solar': 'protector solar facial',
-  'avena coloidal': 'avena coloidal facial',
+  'avena coloidal': 'crema avena coloidal',
   'peroxido de benzoilo': 'peroxido de benzoilo facial',
+  glicerina: 'hidratante glicerina facial',
+  urea: 'crema hidratante urea',
+};
+
+const PRODUCT_TYPE_SCRAPER_QUERIES: Record<string, string> = {
+  'limpiador suave': 'limpiador suave piel sensible',
+  'limpiador suave piel sensible': 'limpiador suave piel sensible',
+  'hidratante no comedogenica': 'hidratante no comedogenica',
+  'hidratante ligera': 'hidratante ligera facial',
+  'emoliente para piel seca': 'emoliente piel seca',
+  'crema hidratante con ceramidas': 'crema hidratante ceramidas',
+  'limpiador syndet sin jabon': 'limpiador syndet facial',
 };
 
 const INGREDIENT_TEXT_PATTERNS: Array<{ pattern: RegExp; ingredientKey: string }> = [
@@ -32,6 +44,8 @@ const INGREDIENT_TEXT_PATTERNS: Array<{ pattern: RegExp; ingredientKey: string }
   { pattern: /peróxido de benzoilo|peroxido de benzoilo/i, ingredientKey: 'peroxido de benzoilo' },
   { pattern: /ácido azelaico|acido azelaico/i, ingredientKey: 'acido azelaico' },
   { pattern: /avena coloidal/i, ingredientKey: 'avena coloidal' },
+  { pattern: /glicerina/i, ingredientKey: 'glicerina' },
+  { pattern: /urea/i, ingredientKey: 'urea' },
 ];
 
 export function normalizeTextForQuery(text: string): string {
@@ -60,7 +74,6 @@ export function dedupeQueries(queries: string[]): string[] {
 
 /**
  * Convierte un componente dermatocosmético en una query corta para el scraper.
- * Una sola query por ingrediente (sin combinar tipos de producto).
  */
 export function ingredientToScraperQuery(ingredient: string): string {
   const key = normalizeTextForQuery(ingredient);
@@ -71,20 +84,34 @@ export function ingredientToScraperQuery(ingredient: string): string {
     return 'protector solar facial';
   }
 
+  if (key.includes('limpiador')) return 'limpiador suave facial';
+  if (key.includes('hidratante') || key.includes('emoliente')) return 'hidratante facial';
+  if (key.includes('urea')) return 'crema hidratante urea';
+
   return `${ingredient.trim()} facial`;
 }
 
+function productTypeToScraperQuery(productType: string): string {
+  const key = normalizeTextForQuery(productType);
+  return PRODUCT_TYPE_SCRAPER_QUERIES[key] ?? productType.trim();
+}
+
 /**
- * Construye queries solo desde suggestedIngredients del catálogo estructurado.
- * No combina tipos de producto ni múltiples activos en la misma búsqueda.
+ * Construye queries desde ingredientes y tipos de producto del catálogo.
  */
 export function buildProductQueriesFromRecommendations(
   recommendations: Recommendation[],
 ): string[] {
-  const ingredients = collectUniqueIngredients(recommendations);
-  const queries = ingredients.map(ingredientToScraperQuery);
+  const ingredientQueries = collectUniqueIngredients(recommendations).map(
+    ingredientToScraperQuery,
+  );
 
-  return dedupeQueries(queries)
+  const typeQueries = recommendations
+    .flatMap((rec) => rec.suggestedProductTypes ?? [])
+    .slice(0, 2)
+    .map(productTypeToScraperQuery);
+
+  return dedupeQueries([...ingredientQueries, ...typeQueries])
     .sort((a, b) => a.length - b.length)
     .slice(0, MAX_QUERIES);
 }
@@ -96,7 +123,10 @@ export function buildFallbackQueriesFromConditions(
   conditions: DetectedCondition[],
 ): string[] {
   const combinedText = conditions
-    .flatMap((condition) => condition.recomendaciones ?? [])
+    .flatMap((condition) => [
+      ...(condition.recomendaciones ?? []),
+      ...(condition.descripcion ? [condition.descripcion] : []),
+    ])
     .join(' ');
 
   if (!combinedText.trim()) return [];
@@ -107,6 +137,10 @@ export function buildFallbackQueriesFromConditions(
     if (!pattern.test(combinedText)) continue;
     const mapped = INGREDIENT_SCRAPER_QUERIES[ingredientKey];
     if (mapped) queries.push(mapped);
+  }
+
+  if (queries.length === 0) {
+    queries.push('limpiador suave piel sensible');
   }
 
   return dedupeQueries(queries).slice(0, MAX_QUERIES);

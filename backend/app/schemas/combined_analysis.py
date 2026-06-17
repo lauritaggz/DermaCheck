@@ -41,3 +41,12 @@ class CombinedFacialAnalysisResponse(BaseModel):
     combined_diagnosis: CombinedDiagnosisSummary
     timestamp: str
     processing_time_ms: float | None = Field(None, ge=0.0)
+    images_processed: int | None = Field(
+        None,
+        ge=1,
+        description="Número de capturas procesadas en la petición",
+    )
+    images: list[dict[str, Any]] | None = Field(
+        None,
+        description="Metadatos de cada captura cuando hay multicaptura",
+    )

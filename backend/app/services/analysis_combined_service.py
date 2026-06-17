@@ -9,9 +9,12 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from fastapi import HTTPException, UploadFile
+
 from app.schemas.analysis import DetectionBox
 from app.schemas.diagnosis import DiagnosisResult
 from app.services.analysis_pipeline_service import build_diagnosis, run_yolo_detections
+from app.services.analysis_validation_service import read_and_validate_image
 from app.config import settings
 from app.services.expression_lines_inference_service import (
     TASK_NAME,
@@ -23,6 +26,13 @@ logger = logging.getLogger("dermacheck.combined_analysis")
 EXPRESSION_LINES_ERROR_MESSAGE = (
     "No fue posible ejecutar el análisis de líneas de expresión."
 )
+
+EMPTY_EXPRESSION_LINES: dict[str, Any] = {
+    "detected": False,
+    "count": 0,
+    "average_confidence": 0.0,
+    "detections": [],
+}
 
 
 @dataclass
@@ -58,6 +68,53 @@ def run_expression_lines_safe(
             "error": EXPRESSION_LINES_ERROR_MESSAGE,
             "task": TASK_NAME,
         }
+
+
+def build_affections_payload(
+    detections: list[DetectionBox],
+    diagnosis: DiagnosisResult,
+    derm_conf: float,
+) -> dict[str, Any]:
+    return {
+        "analysis": {
+            "model_conf_threshold": derm_conf,
+            "total_detections": len(detections),
+            "detections": [d.model_dump() for d in detections],
+        },
+        "diagnosis": diagnosis.model_dump(),
+    }
+
+
+def run_derm_conditions_detection(
+    image_bytes: bytes,
+    *,
+    conf: float,
+) -> list[DetectionBox]:
+    """Ejecuta YOLO dermatológico sobre bytes de imagen ya validados."""
+    return run_yolo_detections(image_bytes, conf=conf)
+
+
+async def analyze_face_conditions_only(
+    upload: UploadFile,
+    *,
+    conf: float,
+    allowed_types: set[str],
+    max_bytes: int,
+) -> tuple[bytes, list[DetectionBox]]:
+    """Lee, valida y ejecuta YOLO dermatológico sobre una imagen subida."""
+    try:
+        content = await read_and_validate_image(
+            upload,
+            allowed_types=allowed_types,
+            max_bytes=max_bytes,
+        )
+        detections = run_derm_conditions_detection(content, conf=conf)
+        return content, detections
+    except HTTPException as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=f"Error al procesar una de las imágenes enviadas: {exc.detail}",
+        ) from exc
 
 
 def build_combined_diagnosis(
@@ -105,7 +162,7 @@ def analyze_face_total(
     Si dermatología falla, propaga la excepción (mismo comportamiento que face-analyze).
     Si líneas de expresión falla, devuelve bloque degradado en expression_lines.
     """
-    detections = run_yolo_detections(image_bytes, conf=derm_conf)
+    detections = run_derm_conditions_detection(image_bytes, conf=derm_conf)
     diagnosis = build_diagnosis(detections)
     expression_lines = run_expression_lines_safe(image_bytes, conf=lines_conf)
     logger.info(
@@ -114,18 +171,9 @@ def analyze_face_total(
         lines_conf,
     )
 
-    affections = {
-        "analysis": {
-            "model_conf_threshold": derm_conf,
-            "total_detections": len(detections),
-            "detections": [d.model_dump() for d in detections],
-        },
-        "diagnosis": diagnosis.model_dump(),
-    }
-
     payload = {
         "analysis_type": "combined_facial_analysis",
-        "affections": affections,
+        "affections": build_affections_payload(detections, diagnosis, derm_conf),
         "expression_lines": expression_lines,
         "combined_diagnosis": build_combined_diagnosis(diagnosis, expression_lines),
     }
@@ -133,6 +181,46 @@ def analyze_face_total(
     return CombinedFaceAnalysisResult(
         payload=payload,
         detections=detections,
+        diagnosis=diagnosis,
+        derm_conf=derm_conf,
+    )
+
+
+def analyze_face_double(
+    image_bytes_1: bytes,
+    image_bytes_2: bytes,
+    *,
+    derm_conf: float = 0.85,
+) -> CombinedFaceAnalysisResult:
+    """
+    Ejecuta YOLO dermatológico en dos imágenes, fusiona detecciones y genera
+    un único diagnóstico. No ejecuta análisis de líneas de expresión.
+    """
+    detections_1 = run_derm_conditions_detection(image_bytes_1, conf=derm_conf)
+    detections_2 = run_derm_conditions_detection(image_bytes_2, conf=derm_conf)
+    all_detections = detections_1 + detections_2
+    diagnosis = build_diagnosis(all_detections)
+    expression_lines = EMPTY_EXPRESSION_LINES.copy()
+
+    logger.info(
+        "Análisis doble: derm_conf=%.2f detecciones=%d (img1=%d, img2=%d)",
+        derm_conf,
+        len(all_detections),
+        len(detections_1),
+        len(detections_2),
+    )
+
+    payload = {
+        "analysis_type": "combined_facial_analysis_double",
+        "affections": build_affections_payload(all_detections, diagnosis, derm_conf),
+        "expression_lines": expression_lines,
+        "combined_diagnosis": build_combined_diagnosis(diagnosis, expression_lines),
+        "images_processed": 2,
+    }
+
+    return CombinedFaceAnalysisResult(
+        payload=payload,
+        detections=all_detections,
         diagnosis=diagnosis,
         derm_conf=derm_conf,
     )

@@ -17,10 +17,12 @@ from app.routers import (
     analysis_upload,
     auth,
     consent,
+    kiosk,
     logs,
     products,
 )
 from app.seed_legal_documents import seed_legal_documents
+from app.services.kiosk_user_service import ensure_kiosk_user
 from app.services.product_search.fallback import seed_product_fallback_catalog
 from app.database import SessionLocal
 
@@ -35,6 +37,7 @@ async def lifespan(_: FastAPI):
     try:
         seed_legal_documents(db)
         seed_product_fallback_catalog(db)
+        ensure_kiosk_user(db)
     finally:
         db.close()
     yield
@@ -61,6 +64,8 @@ app = FastAPI(title="DermaCheck API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    # Permite acceso desde otros dispositivos en la red local (LAN).
+    allow_origin_regex=r"https?://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,6 +73,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(consent.router, prefix=settings.api_prefix)
+app.include_router(kiosk.router, prefix=settings.api_prefix)
 app.include_router(analysis_upload.router, prefix=settings.api_prefix)
 app.include_router(analysis_inference.router, prefix=settings.api_prefix)
 app.include_router(analysis_expression_lines.router, prefix=settings.api_prefix)

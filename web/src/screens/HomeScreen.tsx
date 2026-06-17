@@ -13,27 +13,26 @@ import { DisclaimerBanner } from '../components/results/DisclaimerBanner';
 const CONDITIONS = ['Acné', 'Hiperpigmentación', 'Líneas de expresión', 'Rosácea', 'Dermatitis', 'Resequedad'];
 
 export function HomeScreen() {
-  const { user, setUser, consent } = useAppState();
+  const { consent } = useAppState();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && !consent.accepted) navigate('/consent');
-  }, [user, consent.accepted, navigate]);
+    if (!consent.accepted) navigate('/consent');
+  }, [consent.accepted, navigate]);
 
   return (
     <PageTransition>
       <AppShell>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 min-h-screen">
           <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
-            <BrandLogo size="md" subtitle={`Hola, ${user?.name ?? ''}`} />
-            <button type="button" onClick={() => { setUser(null); navigate('/'); }}
+            <BrandLogo size="md" subtitle="Análisis facial en tótem" />
+            <button type="button" onClick={() => navigate('/')}
               className="text-sm text-textSecondary hover:text-brand-600 font-medium px-4 py-2 rounded-lg hover:bg-white transition-colors">
-              Cerrar sesión
+              Volver
             </button>
           </header>
 
           <div className="grid lg:grid-cols-5 gap-6">
-            {/* CTA principal */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -48,7 +47,7 @@ export function HomeScreen() {
                 />
 
                 <div className="flex-1 surface-card p-5 mb-6">
-                  <p className="text-xs font-semibold text-textMuted uppercase tracking-wide mb-3">Afecciones que analizamos</p>
+                  <p className="text-xs font-semibold text-textMuted normal-case mb-3">Afecciones que analizamos</p>
                   <div className="flex flex-wrap gap-2">
                     {CONDITIONS.map((c) => (
                       <span key={c} className="px-3 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-xs font-medium text-brand-700">
@@ -62,12 +61,11 @@ export function HomeScreen() {
               </div>
             </motion.div>
 
-            {/* Stats laterales */}
             <div className="lg:col-span-2 space-y-4">
               {[
                 { icon: ZapIcon, title: 'Análisis rápido', desc: '< 10 segundos', color: 'bg-amber-100 text-amber-600' },
                 { icon: TargetIcon, title: 'Alta precisión', desc: 'Miles de imágenes de entrenamiento', color: 'bg-brand-100 text-brand-600' },
-                { icon: LockIcon, title: '100% privado', desc: 'Datos encriptados', color: 'bg-emerald-100 text-emerald-600' },
+                { icon: LockIcon, title: '100% privado', desc: 'Sin registro de cliente', color: 'bg-emerald-100 text-emerald-600' },
               ].map(({ icon: Icon, title, desc, color }, i) => (
                 <motion.div
                   key={title}

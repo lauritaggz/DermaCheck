@@ -28,6 +28,8 @@ export function mapCombinedFacialAnalysis(
     analysis_type: payload.analysis_type,
     expression_lines,
     combined_diagnosis,
+    images_processed: payload.images_processed,
+    images: payload.images,
   };
 }
 

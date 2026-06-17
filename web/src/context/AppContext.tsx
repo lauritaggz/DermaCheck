@@ -5,13 +5,24 @@ import { LEGAL_DOC_VERSION } from '../constants/legalDocuments';
 interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
-  pendingImage: ImageAsset | null;
-  setPendingImage: (image: ImageAsset | null) => void;
+  pendingImages: ImageAsset[];
+  addPendingImage: (image: ImageAsset) => void;
+  clearPendingImages: () => void;
+  /** Copia de imágenes reservada al pulsar «Analizar» (evita perderlas al navegar). */
+  imagesForAnalysis: ImageAsset[] | null;
+  queueImagesForAnalysis: (images: ImageAsset[]) => void;
+  clearImagesForAnalysis: () => void;
   consent: ConsentStatus;
   setConsent: (consent: ConsentStatus) => void;
   analysisResult: AnalysisWithDiagnosis | null;
   setAnalysisResult: (result: AnalysisWithDiagnosis | null) => void;
 }
+
+export const MIN_FACE_CAPTURES = 1;
+export const MAX_FACE_CAPTURES = 2;
+
+/** @deprecated Usar MIN_FACE_CAPTURES / MAX_FACE_CAPTURES */
+export const REQUIRED_FACE_CAPTURES = MAX_FACE_CAPTURES;
 
 const AppContext = createContext<AppState | undefined>(undefined);
 
@@ -33,8 +44,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   });
 
-  const [pendingImage, setPendingImage] = useState<ImageAsset | null>(null);
+  const [pendingImages, setPendingImages] = useState<ImageAsset[]>([]);
+  const [imagesForAnalysis, setImagesForAnalysis] = useState<ImageAsset[] | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisWithDiagnosis | null>(null);
+
+  function addPendingImage(image: ImageAsset) {
+    setPendingImages((prev) => [...prev, image]);
+  }
+
+  function clearPendingImages() {
+    setPendingImages((prev) => {
+      prev.forEach((img) => URL.revokeObjectURL(img.objectUrl));
+      return [];
+    });
+  }
+
+  function queueImagesForAnalysis(images: ImageAsset[]) {
+    setImagesForAnalysis([...images]);
+  }
+
+  function clearImagesForAnalysis() {
+    setImagesForAnalysis(null);
+  }
 
   function setUser(newUser: User | null) {
     setUserState(newUser);
@@ -60,8 +91,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{ 
       user, 
       setUser, 
-      pendingImage, 
-      setPendingImage, 
+      pendingImages,
+      addPendingImage,
+      clearPendingImages,
+      imagesForAnalysis,
+      queueImagesForAnalysis,
+      clearImagesForAnalysis,
       consent, 
       setConsent,
       analysisResult,

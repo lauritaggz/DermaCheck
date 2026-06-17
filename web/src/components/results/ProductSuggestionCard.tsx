@@ -59,7 +59,7 @@ export function ProductSuggestionCard({ product }: Props) {
                   : 'border-slate-200 bg-slate-50'
               }`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-textMuted">
+              <p className="text-xs font-semibold normal-case text-textMuted">
                 {PHARMACY_LABELS[key]}
               </p>
               <p className={`text-sm font-bold mt-0.5 ${isCheapest ? 'text-teal-700' : 'text-brand-900'}`}>

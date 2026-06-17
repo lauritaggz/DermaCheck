@@ -12,20 +12,20 @@ import { useAppState } from '../context/AppContext';
 import { consentService } from '../services/consentService';
 
 export function ConsentScreen() {
-  const { setConsent, consent, user } = useAppState();
+  const { setConsent, consent } = useAppState();
   const navigate = useNavigate();
   const [consentRead, setConsentRead] = useState(false);
   const [privacyRead, setPrivacyRead] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
-  useEffect(() => { if (consent.accepted) navigate('/home'); }, [consent.accepted, navigate]);
+  useEffect(() => {
+    if (consent.accepted) navigate('/instructions');
+  }, [consent.accepted, navigate]);
 
   const bothChecked = consentRead && privacyRead;
 
   async function handleContinue() {
-    if (!user) return;
     if (!bothChecked) {
       setError('Marca ambas casillas para confirmar que leíste los documentos.');
       return;
@@ -33,9 +33,9 @@ export function ConsentScreen() {
     setError(null);
     setLoading(true);
     try {
-      const next = await consentService.acceptAllRequiredDocuments(user.id);
+      const next = await consentService.acceptForKioskSession();
       setConsent(next);
-      navigate('/home');
+      navigate('/instructions');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar la aceptación.');
     } finally {
@@ -43,14 +43,12 @@ export function ConsentScreen() {
     }
   }
 
-  if (!user) return null;
-
   return (
     <PageTransition>
       <AppShell>
         <div className="max-w-3xl mx-auto px-4 py-8 min-h-screen">
           <SectionHeader title="Consentimiento y privacidad"
-            description={`Documentos v${LEGAL_DOCUMENTS.consent_informed.version} · Registro en servidor`} />
+            description={`Documentos v${LEGAL_DOCUMENTS.consent_informed.version} · Uso en tótem`} />
 
           <DisclaimerBanner variant="warning" title="Aviso importante"
             message="Los análisis de DermaCheck son preliminares y no reemplazan el criterio de un profesional de la salud." />
@@ -77,7 +75,7 @@ export function ConsentScreen() {
               label={`He leído y acepto la ${LEGAL_DOCUMENTS.privacy_policy.shortTitle.toLowerCase()} (v${LEGAL_DOCUMENTS.privacy_policy.version}).`} />
           </div>
 
-          <PrimaryButton label="Registrar aceptación y continuar" onClick={handleContinue}
+          <PrimaryButton label="Aceptar y comenzar análisis" onClick={handleContinue}
             loading={loading} disabled={!bothChecked || loading} className="w-full" />
         </div>
       </AppShell>

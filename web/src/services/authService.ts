@@ -1,5 +1,5 @@
 import { AUTH_ERRORS } from '../constants/authMessages';
-import { apiUrl, getApiBaseUrl } from '../utils/api';
+import { apiUrl, isApiAvailable } from '../utils/api';
 import type { AuthCredentials, RegisterPayload, User } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
@@ -79,14 +79,14 @@ export const authService = {
    * Requiere `VITE_API_BASE_URL` en el archivo `.env` de la carpeta web.
    */
   async login(credentials: AuthCredentials): Promise<{ user: User } | { error: string }> {
-    if (!getApiBaseUrl()) {
+    if (!isApiAvailable()) {
       return { error: AUTH_ERRORS.SERVER_REQUIRED };
     }
     return loginWithApi(credentials);
   },
 
   async register(payload: RegisterPayload): Promise<{ user: User } | { error: string }> {
-    if (!getApiBaseUrl()) {
+    if (!isApiAvailable()) {
       return { error: AUTH_ERRORS.SERVER_REQUIRED };
     }
     return registerWithApi(payload);

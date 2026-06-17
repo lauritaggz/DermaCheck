@@ -42,7 +42,7 @@ function ProductResultRow({ item }: { item: ProductSearchItem }) {
                   : 'border-slate-200 bg-slate-50'
               }`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-textMuted">
+              <p className="text-xs font-semibold normal-case text-textMuted">
                 {PHARMACY_LABELS[key]}
               </p>
               <p className={`text-sm font-bold mt-0.5 ${isCheapest ? 'text-teal-700' : 'text-brand-900'}`}>
@@ -90,7 +90,7 @@ export function ScraperTestScreen() {
     <div className="app-shell min-h-screen px-4 py-8">
       <div className="max-w-3xl mx-auto">
         <header className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 mb-2">HU22 · Prueba interna</p>
+          <p className="text-xs font-semibold normal-case text-teal-700 mb-2">HU22 · Prueba interna</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-900">Scraper de productos</h1>
           <p className="text-sm text-textSecondary mt-2">
             Página aislada para probar <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">POST /api/products/search</code>.

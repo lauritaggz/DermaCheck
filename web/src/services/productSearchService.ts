@@ -1,4 +1,4 @@
-import { apiUrl, getApiBaseUrl } from '../utils/api';
+import { apiUrl, isApiAvailable } from '../utils/api';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
 import type {
@@ -73,7 +73,7 @@ export async function fetchProducts(
     return { error: 'La búsqueda no puede estar vacía.' };
   }
 
-  if (!getApiBaseUrl()) {
+  if (!isApiAvailable()) {
     return { error: 'No hay servidor configurado. Define VITE_API_BASE_URL en web/.env' };
   }
 

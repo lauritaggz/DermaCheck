@@ -15,6 +15,7 @@ import { RecommendationPanel } from '../components/results/RecommendationPanel';
 import { SkinConditionCard } from '../components/results/SkinConditionCard';
 import { StructuredRecommendationsSection } from '../components/results/StructuredRecommendationsSection';
 import { EmptyState } from '../components/ui/EmptyState';
+import { SendAnalysisEmail } from '../components/results/SendAnalysisEmail';
 import { useAppState } from '../context/AppContext';
 import { ChartIcon } from '../components/Icons';
 import { getMatchedRecommendations } from '../utils/recommendationMatcher';
@@ -28,10 +29,10 @@ export function ResultsScreen() {
   const { analysisResult } = useAppState();
   const navigate = useNavigate();
 
-  useEffect(() => { if (!analysisResult) navigate('/home'); }, [analysisResult, navigate]);
+  useEffect(() => { if (!analysisResult) navigate('/instructions'); }, [analysisResult, navigate]);
   if (!analysisResult) return null;
 
-  const { diagnosis, image, expression_lines, combined_diagnosis } = analysisResult;
+  const { diagnosis, image, expression_lines, combined_diagnosis, images_processed } = analysisResult;
   const showLines = Boolean(expression_lines?.detected);
   const count = diagnosis.condiciones_detectadas.length + (showLines ? 1 : 0);
   const matched = useMemo(
@@ -70,6 +71,9 @@ export function ResultsScreen() {
                 <h1 className="text-2xl sm:text-3xl font-bold">Resultados del análisis</h1>
                 <p className="text-white/80 text-sm mt-1">
                   {count} hallazgo{count !== 1 ? 's' : ''} · Análisis con IA completado
+                  {images_processed && images_processed > 1
+                    ? ` · ${images_processed} fotografías analizadas`
+                    : ''}
                 </p>
               </div>
             </div>
@@ -145,6 +149,10 @@ export function ResultsScreen() {
               </motion.div>
 
               <motion.div variants={item}>
+                <SendAnalysisEmail analysis={analysisResult} />
+              </motion.div>
+
+              <motion.div variants={item}>
                 <DisclaimerBanner variant="info" title="Información importante"
                   message={`${diagnosis.mensaje_severidad.mensaje} Generado el ${new Date(analysisResult.timestamp).toLocaleString('es-ES')}.`} />
               </motion.div>
@@ -153,7 +161,7 @@ export function ResultsScreen() {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <PrimaryButton label="Nuevo análisis" onClick={() => navigate('/image-picker')} className="flex-1" />
-            <PrimaryButton label="Volver al inicio" variant="secondary" onClick={() => navigate('/home')} className="flex-1" />
+            <PrimaryButton label="Volver al inicio" variant="secondary" onClick={() => navigate('/')} className="flex-1" />
           </div>
         </div>
       </AppShell>

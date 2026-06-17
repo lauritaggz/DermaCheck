@@ -1,6 +1,7 @@
 import { AUTH_ERRORS } from '../constants/authMessages';
 import { LEGAL_DOCUMENTS, LEGAL_DOC_VERSION } from '../constants/legalDocuments';
-import { apiUrl, getApiBaseUrl } from '../utils/api';
+import { resolveKioskUserId } from './kioskService';
+import { apiUrl, isApiAvailable } from '../utils/api';
 import type { ConsentStatus, DocumentAcceptanceRecord } from '../types';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
@@ -35,7 +36,7 @@ export const consentService = {
    * Registra aceptación de todos los documentos requeridos en el servidor.
    */
   async acceptAllRequiredDocuments(userId: string): Promise<ConsentStatus> {
-    if (!getApiBaseUrl()) {
+    if (!isApiAvailable()) {
       throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
     }
 
@@ -76,7 +77,7 @@ export const consentService = {
 
   /** Consulta histórico de aceptaciones en el servidor. */
   async fetchUserAcceptances(userId: string): Promise<DocumentAcceptanceRecord[]> {
-    if (!getApiBaseUrl()) {
+    if (!isApiAvailable()) {
       throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
     }
     const url = apiUrl(`${API_V1}/consents/users/${encodeURIComponent(userId)}/acceptances`);
@@ -91,5 +92,22 @@ export const consentService = {
     }
     const rows = (await res.json()) as ApiAcceptanceRow[];
     return Array.isArray(rows) ? rows.map(mapApiAcceptance) : [];
+  },
+
+  /**
+   * Registra consentimiento en tótem usando el usuario técnico de kiosk.
+   * Si el servidor no está disponible, devuelve aceptación solo en cliente.
+   */
+  async acceptForKioskSession(): Promise<ConsentStatus> {
+    try {
+      const userId = await resolveKioskUserId();
+      return await this.acceptAllRequiredDocuments(userId);
+    } catch {
+      return {
+        accepted: true,
+        acceptedAt: new Date().toISOString(),
+        policyVersion: LEGAL_DOC_VERSION,
+      };
+    }
   },
 };

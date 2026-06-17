@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { AppShell } from '../components/layout/AppShell';
@@ -7,52 +7,132 @@ import { SectionHeader } from '../components/layout/SectionHeader';
 import { AnalysisProgress } from '../components/analysis/AnalysisProgress';
 import { ScanLoadingAnimation } from '../components/analysis/ScanLoadingAnimation';
 import { ErrorState } from '../components/ui/ErrorState';
-import { useAppState } from '../context/AppContext';
+import { useAppState, MIN_FACE_CAPTURES } from '../context/AppContext';
 import { useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
+import { resolveKioskUserId } from '../services/kioskService';
+import type { ImageAsset } from '../types';
 
 const STEPS = [
-  { label: 'Cargando imagen', threshold: 20 },
+  { label: 'Cargando imágenes', threshold: 20 },
   { label: 'Ejecutando análisis IA', threshold: 40 },
   { label: 'Detectando afecciones', threshold: 70 },
   { label: 'Generando recomendaciones', threshold: 90 },
 ];
 
 export function ProcessingScreen() {
-  const { pendingImage, user, setAnalysisResult, setPendingImage } = useAppState();
+  const {
+    imagesForAnalysis,
+    pendingImages,
+    setAnalysisResult,
+    clearPendingImages,
+    clearImagesForAnalysis,
+    consent,
+  } = useAppState();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
-  const { analyzeFaceImage, error, clearError } = useDermatologyAnalysis();
+  const { analyzeFaceImage, analyzeFaceImagesDouble, error, clearError } = useDermatologyAnalysis();
+  const runStartedRef = useRef(false);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>();
+  const [processingCount, setProcessingCount] = useState(0);
+  const [bootError, setBootError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!pendingImage || !user) { navigate('/home'); return; }
-    const img = pendingImage;
-    const u = user;
+    return () => {
+      runStartedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (runStartedRef.current) return;
+
+    const images: ImageAsset[] = imagesForAnalysis ?? pendingImages;
+
+    if (!consent.accepted) {
+      navigate('/consent');
+      return;
+    }
+
+    if (images.length < MIN_FACE_CAPTURES) {
+      navigate('/image-picker');
+      return;
+    }
+
+    runStartedRef.current = true;
+    setPreviewUrl(images[0]?.objectUrl);
+    setProcessingCount(images.length);
+
+    const isDouble = images.length >= 2;
 
     async function run() {
       try {
-        const result = await analyzeFaceImage({ imageBlob: img.blob, userId: u.id, confidenceThreshold: 0.25 });
+        const userId = await resolveKioskUserId();
+        const result = isDouble
+          ? await analyzeFaceImagesDouble({
+              imageBlob1: images[0].blob,
+              imageBlob2: images[1].blob,
+              userId,
+              confidenceThreshold: 0.25,
+            })
+          : await analyzeFaceImage({
+              imageBlob: images[0].blob,
+              userId,
+              confidenceThreshold: 0.25,
+            });
+
         if (!result) return;
+
         setAnalysisResult(result);
         setProgress(100);
+        clearPendingImages();
+        clearImagesForAnalysis();
         setTimeout(() => navigate('/analysis/results'), 500);
-      } finally {
-        URL.revokeObjectURL(img.objectUrl);
-        setPendingImage(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error al iniciar el análisis';
+        setBootError(message);
+        runStartedRef.current = false;
       }
     }
 
     const interval = setInterval(() => {
-      setProgress((p) => { if (p >= 90) { clearInterval(interval); return 90; } return p + 10; });
+      setProgress((p) => {
+        if (p >= 90) {
+          clearInterval(interval);
+          return 90;
+        }
+        return p + 10;
+      });
     }, 500);
+
     run();
     return () => clearInterval(interval);
-  }, [pendingImage, user, navigate, setAnalysisResult, setPendingImage, analyzeFaceImage]);
+  }, [
+    analyzeFaceImage,
+    analyzeFaceImagesDouble,
+    clearImagesForAnalysis,
+    clearPendingImages,
+    consent.accepted,
+    imagesForAnalysis,
+    navigate,
+    pendingImages,
+    setAnalysisResult,
+  ]);
 
-  if (error) {
+  const displayError = bootError ?? error;
+
+  if (displayError) {
     return (
       <PageTransition>
         <AppShell>
-          <ErrorState title="Error en el análisis" message={error} onAction={() => { clearError(); navigate('/home'); }} />
+          <ErrorState
+            title="Error en el análisis"
+            message={displayError}
+            onAction={() => {
+              clearError();
+              setBootError(null);
+              runStartedRef.current = false;
+              navigate('/preview');
+            }}
+          />
         </AppShell>
       </PageTransition>
     );
@@ -63,11 +143,19 @@ export function ProcessingScreen() {
       <AppShell>
         <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col justify-center">
           <FlowStepper currentStep={4} />
-          <SectionHeader badge="Procesamiento IA" title="Analizando tu piel"
-            description="Nuestro modelo está procesando tu fotografía facial" align="center" />
+          <SectionHeader
+            badge="Procesamiento IA"
+            title="Analizando tu piel"
+            description={
+              processingCount >= 2
+                ? 'Procesando 2 fotografías faciales'
+                : 'Procesando tu fotografía facial'
+            }
+            align="center"
+          />
 
           <div className="grid md:grid-cols-2 gap-8 items-center">
-            <ScanLoadingAnimation imageUrl={pendingImage?.objectUrl} />
+            <ScanLoadingAnimation imageUrl={previewUrl} />
             <AnalysisProgress progress={progress} steps={STEPS} />
           </div>
 

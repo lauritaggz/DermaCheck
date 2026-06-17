@@ -29,7 +29,7 @@ export function ExpressionLinesFindingCard({ expressionLines, cardIndex }: Props
           </div>
           <div className="bg-violet-50 rounded-xl p-4 min-w-[110px] text-center border border-violet-100">
             <div className="text-3xl font-bold text-violet-700">{confidencePercent}%</div>
-            <p className="text-[10px] font-semibold text-textMuted uppercase">Confianza</p>
+            <p className="text-xs font-semibold text-textMuted normal-case">Confianza</p>
             <p className="text-xs text-textSecondary mt-1">
               {expressionLines.count} detección{expressionLines.count !== 1 ? 'es' : ''}
             </p>

@@ -50,7 +50,8 @@ function scheduleRemoteFlush(): void {
 async function flushRemoteLogs(force: boolean = false): Promise<void> {
   if (window.__DERMACHECK_REMOTE_LOG_FLUSHING__) return;
   const baseUrl = getApiBaseUrl();
-  if (!baseUrl) return;
+  const endpoint = baseUrl ? `${baseUrl.replace(/\/$/, '')}${REMOTE_ENDPOINT}` : REMOTE_ENDPOINT;
+  if (!baseUrl && !import.meta.env.DEV) return;
 
   const queue = getRemoteQueue();
   if (!force && queue.length < REMOTE_BATCH_SIZE) return;
@@ -61,7 +62,7 @@ async function flushRemoteLogs(force: boolean = false): Promise<void> {
   const batch = queue.slice(0, batchSize);
 
   try {
-    const response = await fetch(`${baseUrl}${REMOTE_ENDPOINT}`, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

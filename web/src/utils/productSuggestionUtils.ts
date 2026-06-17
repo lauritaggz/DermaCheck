@@ -1,5 +1,6 @@
 import type { Recommendation, SuggestedProduct } from '../types';
 import type { ProductSearchItem } from '../types/productSearch';
+import { getIngredientName } from './recommendationMatcher';
 import { normalizeTextForQuery } from './productQueryBuilder';
 
 export function getProductKey(product: Pick<SuggestedProduct, 'nombre' | 'url'>): string {
@@ -22,7 +23,9 @@ export function computeRelevanceScore(
     `${product.nombre} ${product.descripcion ?? ''}`,
   );
 
-  const ingredients = recommendations.flatMap((rec) => rec.suggestedIngredients ?? []);
+  const ingredients = recommendations.flatMap((rec) =>
+    (rec.suggestedIngredients ?? []).map(getIngredientName),
+  );
   const productTypes = recommendations.flatMap((rec) => rec.suggestedProductTypes ?? []);
 
   let score = 0;

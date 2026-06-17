@@ -9,7 +9,9 @@
     color: #1A1A1A;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-transform: none;
+    font-variant: normal;
   }
 
   #root {
@@ -186,6 +188,19 @@
     background: #FEF2F2;
     color: #B91C1C;
     border-color: #FECACA;
+  }
+
+  /* Landing: evitar confusión visual i/I en etiquetas pequeñas */
+  .landing-text,
+  .landing-text * {
+    text-transform: none;
+    font-variant: normal;
+  }
+
+  .landing-section-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
   }
 }
 

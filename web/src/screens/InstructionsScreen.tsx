@@ -7,6 +7,7 @@ import { FlowStepper } from '../components/layout/FlowStepper';
 import { SectionHeader } from '../components/layout/SectionHeader';
 import { CameraIcon, LightBulbIcon, TargetIcon, CheckCircleIcon } from '../components/Icons';
 import { DisclaimerBanner } from '../components/results/DisclaimerBanner';
+import { CaptureReferenceGuide } from '../components/capture/CaptureReferenceGuide';
 
 const STEPS = [
   { n: 1, icon: CameraIcon, color: 'bg-brand-500', title: 'Posiciónate frente a la cámara',
@@ -15,9 +16,9 @@ const STEPS = [
   { n: 2, icon: LightBulbIcon, color: 'bg-amber-500', title: 'Verifica la iluminación',
     desc: 'La app validará la calidad. Óvalo verde = listo para capturar.',
     quality: true },
-  { n: 3, icon: TargetIcon, color: 'bg-teal-500', title: 'Captura la imagen',
-    desc: 'Cuando la calidad sea buena, presiona capturar para continuar.',
-    note: 'Recibirás un reporte con recomendaciones orientativas en segundos.' },
+  { n: 3, icon: TargetIcon, color: 'bg-teal-500', title: 'Captura 1 o 2 imágenes',
+    desc: 'Toma al menos una fotografía del rostro. Una segunda foto en otro ángulo es opcional y mejora el análisis combinado.',
+    note: 'Recibirás un reporte combinado con recomendaciones orientativas en segundos.' },
 ];
 
 export function InstructionsScreen() {
@@ -27,7 +28,7 @@ export function InstructionsScreen() {
     <PageTransition>
       <AppShell>
         <div className="max-w-3xl mx-auto px-4 py-8 min-h-screen">
-          <button type="button" onClick={() => navigate('/home')}
+          <button type="button" onClick={() => navigate('/')}
             className="mb-6 flex items-center gap-2 text-sm text-textSecondary hover:text-brand-600 font-medium transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -38,6 +39,8 @@ export function InstructionsScreen() {
           <FlowStepper currentStep={2} />
           <SectionHeader badge="Guía de captura" title="Instrucciones de uso"
             description="Sigue estos pasos para obtener el mejor análisis facial" align="center" />
+
+          <CaptureReferenceGuide className="mb-6" />
 
           <div className="space-y-4 mb-8">
             {STEPS.map((step, i) => {

@@ -66,11 +66,11 @@ export function FacePreviewCard({
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="p-3 rounded-xl bg-brand-50 border border-brand-100 text-center">
-              <p className="text-[10px] text-textMuted uppercase tracking-wide">Resolución</p>
+              <p className="text-xs text-textMuted font-medium normal-case">Resolución</p>
               <p className="text-sm font-bold text-brand-800">{width}×{height}</p>
             </div>
             <div className="p-3 rounded-xl bg-brand-50 border border-brand-100 text-center">
-              <p className="text-[10px] text-textMuted uppercase tracking-wide">Estado</p>
+              <p className="text-xs text-textMuted font-medium normal-case">Estado</p>
               <p className="text-sm font-bold text-brand-800">{isGood ? 'Aprobada' : 'Revisar'}</p>
             </div>
           </div>

@@ -7,6 +7,8 @@ export interface DetectedCondition {
   advertencias: string[];
   color_ui: string;
   recomendaciones: string[];
+  criterios_derivacion?: string[];
+  fuentes?: ConditionSource[];
   sugiere_consulta_dermatologo: boolean;
 }
 
@@ -79,6 +81,12 @@ export interface CombinedFacialAnalysisApiResponse {
   combined_diagnosis: CombinedDiagnosis;
   timestamp: string;
   processing_time_ms?: number;
+  images_processed?: number;
+  images?: Array<{
+    filename: string;
+    path: string;
+    size_bytes: number;
+  }>;
 }
 
 // Análisis completo con diagnóstico (face-analyze o normalizado desde face-analyze-total)
@@ -102,6 +110,12 @@ export interface AnalysisWithDiagnosis {
   analysis_type?: string;
   expression_lines?: ExpressionLinesResult;
   combined_diagnosis?: CombinedDiagnosis;
+  images_processed?: number;
+  images?: Array<{
+    filename: string;
+    path: string;
+    size_bytes: number;
+  }>;
 }
 
 export interface User {
@@ -113,16 +127,37 @@ export interface User {
 
 export type RecommendationCategory = 'routine' | 'sun' | 'professional' | 'lifestyle';
 
+export interface ConditionSource {
+  nombre?: string;
+  name?: string;
+  titulo?: string;
+  title?: string;
+  url: string;
+  uso?: string;
+}
+
+export interface SuggestedIngredientDetail {
+  name: string;
+  purpose: string;
+  cautions?: string[];
+}
+
 export interface Recommendation {
   id: string;
   title: string;
-  body: string;
-  category: RecommendationCategory;
+  /** Resumen educativo; reemplaza body en entradas nuevas. */
+  summary?: string;
+  /** Texto legacy para compatibilidad con entradas antiguas. */
+  body?: string;
+  category?: RecommendationCategory;
   relatedConditionKeys?: string[];
-  /** Ingredientes frecuentes en cosmética; solo orientativos, sin marcas. */
-  suggestedIngredients: string[];
-  /** Formatos de producto genéricos sugeridos. */
+  suggestedIngredients: SuggestedIngredientDetail[] | string[];
   suggestedProductTypes: string[];
+  morningRoutine?: string[];
+  nightRoutine?: string[];
+  avoid?: string[];
+  whenToConsult?: string[];
+  sources?: ConditionSource[];
 }
 
 /** Precios por farmacia para productos sugeridos en resultados. */
