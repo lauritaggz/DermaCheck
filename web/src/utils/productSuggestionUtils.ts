@@ -1,14 +1,71 @@
 import type { Recommendation, SuggestedProduct } from '../types';
 import type { ProductSearchItem } from '../types/productSearch';
-import { getIngredientName } from './recommendationMatcher';
+import { getIngredientName, getRecommendationDisplayLabel } from './recommendationMatcher';
 import { normalizeTextForQuery } from './productQueryBuilder';
+
+export const MAX_SUGGESTED_PRODUCTS = 3;
 
 export function getProductKey(product: Pick<SuggestedProduct, 'nombre' | 'url'>): string {
   return `${normalizeTextForQuery(product.nombre)}-${product.url ?? ''}`;
 }
 
+function getProductSearchableText(product: SuggestedProduct): string {
+  return normalizeTextForQuery(`${product.nombre} ${product.descripcion ?? ''}`);
+}
+
 function countPharmaciesWithPrice(product: SuggestedProduct): number {
   return Object.values(product.precios).filter((price) => price != null && price > 0).length;
+}
+
+/** Componentes recomendados que aparecen en el nombre o descripción del producto. */
+export function getMatchingRecommendedIngredients(
+  product: SuggestedProduct,
+  recommendations: Recommendation[],
+): string[] {
+  const searchable = getProductSearchableText(product);
+  const matched: string[] = [];
+  const seen = new Set<string>();
+
+  for (const rec of recommendations) {
+    for (const ingredient of rec.suggestedIngredients ?? []) {
+      const name = getIngredientName(ingredient);
+      const key = normalizeTextForQuery(name);
+      if (!key || seen.has(key)) continue;
+      if (searchable.includes(key)) {
+        seen.add(key);
+        matched.push(name);
+      }
+    }
+  }
+
+  return matched;
+}
+
+/** Afecciones cuyos componentes sugeridos aparecen en el producto. */
+export function getMatchingConditionLabels(
+  product: SuggestedProduct,
+  recommendations: Recommendation[],
+  detectedConditions: { id: string; label: string }[] = [],
+): string[] {
+  const searchable = getProductSearchableText(product);
+  const labels: string[] = [];
+  const seen = new Set<string>();
+
+  for (const rec of recommendations) {
+    const hasIngredientMatch = (rec.suggestedIngredients ?? []).some((ingredient) => {
+      const key = normalizeTextForQuery(getIngredientName(ingredient));
+      return key && searchable.includes(key);
+    });
+    if (!hasIngredientMatch) continue;
+
+    const label = getRecommendationDisplayLabel(rec, detectedConditions);
+    const labelKey = label.toLowerCase();
+    if (seen.has(labelKey)) continue;
+    seen.add(labelKey);
+    labels.push(label);
+  }
+
+  return labels;
 }
 
 /**
@@ -19,21 +76,10 @@ export function computeRelevanceScore(
   product: SuggestedProduct,
   recommendations: Recommendation[],
 ): number {
-  const searchable = normalizeTextForQuery(
-    `${product.nombre} ${product.descripcion ?? ''}`,
-  );
-
-  const ingredients = recommendations.flatMap((rec) =>
-    (rec.suggestedIngredients ?? []).map(getIngredientName),
-  );
+  const searchable = getProductSearchableText(product);
   const productTypes = recommendations.flatMap((rec) => rec.suggestedProductTypes ?? []);
 
-  let score = 0;
-
-  for (const ingredient of ingredients) {
-    const normalizedIngredient = normalizeTextForQuery(ingredient);
-    if (searchable.includes(normalizedIngredient)) score += 3;
-  }
+  let score = getMatchingRecommendedIngredients(product, recommendations).length * 3;
 
   for (const type of productTypes) {
     const normalizedType = normalizeTextForQuery(type);
@@ -83,15 +129,30 @@ export function mergeDuplicateProducts(
 export function rankSuggestedProducts(
   products: SuggestedProduct[],
   recommendations: Recommendation[],
-  limit = 5,
+  limit = MAX_SUGGESTED_PRODUCTS,
+  detectedConditions: { id: string; label: string }[] = [],
 ): SuggestedProduct[] {
-  const scored = products.map((product) => ({
-    ...product,
-    relevanceScore: computeRelevanceScore(product, recommendations),
-  }));
+  const scored = products
+    .map((product) => {
+      const matchedIngredients = getMatchingRecommendedIngredients(product, recommendations);
+      return {
+        ...product,
+        matchedIngredients,
+        matchedConditions: getMatchingConditionLabels(
+          product,
+          recommendations,
+          detectedConditions,
+        ),
+        relevanceScore: computeRelevanceScore(product, recommendations),
+      };
+    })
+    .filter((product) => product.matchedIngredients.length > 0);
 
   return scored
     .sort((a, b) => {
+      const ingredientDiff = b.matchedIngredients.length - a.matchedIngredients.length;
+      if (ingredientDiff !== 0) return ingredientDiff;
+
       const scoreDiff = (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0);
       if (scoreDiff !== 0) return scoreDiff;
 

@@ -26,10 +26,6 @@ function formatDate(iso: string): string {
   }
 }
 
-function formatConfidence(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
 export function buildAnalysisEmailHtml(
   analysis: AnalysisWithDiagnosis,
   recipientEmail?: string,
@@ -45,11 +41,10 @@ export function buildAnalysisEmailHtml(
     ? diagnosis.condiciones_detectadas.map((c) => `
         <tr>
           <td style="padding:12px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a;">${escapeHtml(c.label)}</td>
-          <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#334155;">${formatConfidence(c.confianza_promedio)}</td>
           <td style="padding:12px;border-bottom:1px solid #e2e8f0;color:#334155;">${c.cantidad_detecciones}</td>
         </tr>
       `).join('')
-    : `<tr><td colspan="3" style="padding:16px;color:#64748b;text-align:center;">No se detectaron afecciones significativas.</td></tr>`;
+    : `<tr><td colspan="2" style="padding:16px;color:#64748b;text-align:center;">No se detectaron afecciones significativas.</td></tr>`;
 
   const recommendationsHtml = diagnosis.consejos_generales.length > 0
     ? diagnosis.consejos_generales.map((tip) => `<li style="margin-bottom:8px;">${escapeHtml(tip)}</li>`).join('')
@@ -105,7 +100,6 @@ export function buildAnalysisEmailHtml(
                 <thead>
                   <tr style="background:#f8fafc;">
                     <th align="left" style="padding:12px;font-size:13px;color:#475569;">Afección</th>
-                    <th align="left" style="padding:12px;font-size:13px;color:#475569;">Confianza</th>
                     <th align="left" style="padding:12px;font-size:13px;color:#475569;">Detecciones</th>
                   </tr>
                 </thead>

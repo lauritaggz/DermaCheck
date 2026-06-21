@@ -9,9 +9,13 @@
 #   - Swagger Docs: http://localhost:8000/docs
 #
 # Cambiar credenciales MySQL antes de exponer a internet.
-# Volúmenes persistentes: mysql_data (base de datos), face_uploads (imágenes)
+# Volúmenes persistentes: mysql_data (base de datos), face_uploads (imágenes),
+# backend_storage (training_images + cola temporal job_queue)
 
 version: '3.8'
+
+x-timezone: &timezone
+  TZ: ${TZ:-America/Santiago}
 
 services:
   # Base de datos MySQL
@@ -19,6 +23,7 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
+      <<: *timezone
       MYSQL_DATABASE: dermacheck
       MYSQL_USER: dermacheck
       MYSQL_PASSWORD: dermacheck_change_in_production
@@ -42,14 +47,24 @@ services:
     restart: unless-stopped
     ports:
       - "${API_HOST_PORT:-8001}:8000"
+    env_file:
+      - ./backend/.env
     environment:
+      <<: *timezone
       DATABASE_URL: mysql+pymysql://dermacheck:dermacheck_change_in_production@db:3306/dermacheck?charset=utf8mb4
       MODEL_PATH: ml_models/best.pt
       UPLOAD_DIR: static/uploads
-      CORS_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3005
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3005,http://127.0.0.1:5173,http://127.0.0.1:3005
+      # Cola de análisis (in-memory; requiere 1 proceso uvicorn — no usar múltiples workers)
+      ANALYSIS_QUEUE_MAX_SIZE: ${ANALYSIS_QUEUE_MAX_SIZE:-10}
+      ANALYSIS_MAX_CONCURRENT: ${ANALYSIS_MAX_CONCURRENT:-1}
+      ANALYSIS_JOB_TTL_SECONDS: ${ANALYSIS_JOB_TTL_SECONDS:-3600}
+      ANALYSIS_JOB_POLL_INTERVAL_HINT: ${ANALYSIS_JOB_POLL_INTERVAL_HINT:-1.5}
     volumes:
       - face_uploads:/app/static/uploads
+      - backend_storage:/app/storage
       - ./backend/ml_models:/app/ml_models:ro
+      - ./backend/app:/app/app
     depends_on:
       db:
         condition: service_healthy
@@ -73,6 +88,8 @@ services:
       - "${WEB_HOST_PORT:-3005}:80"
     depends_on:
       - api
+    environment:
+      <<: *timezone
     networks:
       - dermacheck_network
 
@@ -80,6 +97,8 @@ volumes:
   mysql_data:
     driver: local
   face_uploads:
+    driver: local
+  backend_storage:
     driver: local
 
 networks:

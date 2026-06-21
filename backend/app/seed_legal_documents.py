@@ -1,4 +1,4 @@
-"""Documentos legales vigentes (versiones alineadas con la app móvil)."""
+"""Documentos legales vigentes (versiones alineadas con la app web)."""
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,13 +8,19 @@ from app.models import LegalDocument
 DEFAULT_DOCS: list[dict[str, str | bool]] = [
     {
         "slug": "consent_informed",
-        "title": "Consentimiento informado",
-        "version": "1.0",
+        "title": "Consentimiento informado para análisis dermatológico orientativo",
+        "version": "2.0",
         "is_active": True,
     },
     {
         "slug": "privacy_policy",
-        "title": "Política de privacidad",
+        "title": "Política de privacidad resumida",
+        "version": "2.0",
+        "is_active": True,
+    },
+    {
+        "slug": "consent_training",
+        "title": "Autorización opcional para mejora del modelo",
         "version": "1.0",
         "is_active": True,
     },

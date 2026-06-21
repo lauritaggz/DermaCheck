@@ -5,6 +5,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { BrandLogo } from '../components/layout/BrandLogo';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { DisclaimerBanner } from '../components/results/DisclaimerBanner';
+import { useAppState } from '../context/AppContext';
 import {
   CameraIcon,
   ChartIcon,
@@ -188,6 +189,12 @@ function TotemMockup() {
 
 export function WelcomeScreen() {
   const navigate = useNavigate();
+  const { resetKioskSession } = useAppState();
+
+  const startNewAnalysis = () => {
+    resetKioskSession();
+    navigate('/consent');
+  };
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -212,14 +219,14 @@ export function WelcomeScreen() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate('/consent')}
+                  onClick={startNewAnalysis}
                   className="text-sm font-semibold text-brand-600 hover:text-brand-700 px-3 py-2 transition-colors"
                 >
                   Comenzar
                 </button>
                 <PrimaryButton
                   label="Probar análisis"
-                  onClick={() => navigate('/consent')}
+                  onClick={startNewAnalysis}
                   className="!min-h-[40px] !px-4 !text-sm"
                 />
               </div>
@@ -253,7 +260,7 @@ export function WelcomeScreen() {
                     <div className="flex flex-col xs:flex-row gap-3 mt-8">
                       <button
                         type="button"
-                        onClick={() => navigate('/consent')}
+                        onClick={startNewAnalysis}
                         className="min-h-[52px] px-8 rounded-xl bg-white text-brand-700 font-semibold shadow-elevated hover:bg-brand-50 transition-all text-sm sm:text-base"
                       >
                         Probar análisis
@@ -495,7 +502,7 @@ export function WelcomeScreen() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate('/consent')}
+                    onClick={startNewAnalysis}
                     className="min-h-[52px] px-8 rounded-xl border-2 border-white/50 text-white font-semibold hover:bg-white/10 transition-all text-sm sm:text-base"
                   >
                     Probar DermaCheck

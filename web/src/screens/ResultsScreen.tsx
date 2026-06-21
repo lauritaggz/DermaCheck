@@ -26,15 +26,26 @@ const stagger = { animate: { transition: { staggerChildren: 0.08 } } };
 const item = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
 export function ResultsScreen() {
-  const { analysisResult } = useAppState();
+  const { analysisResult, resultImageUrls, resetKioskSession } = useAppState();
   const navigate = useNavigate();
 
   useEffect(() => { if (!analysisResult) navigate('/instructions'); }, [analysisResult, navigate]);
   if (!analysisResult) return null;
 
-  const { diagnosis, image, expression_lines, combined_diagnosis, images_processed } = analysisResult;
+  const { diagnosis, image, expression_lines, combined_diagnosis, images_processed, images } = analysisResult;
   const showLines = Boolean(expression_lines?.detected);
   const count = diagnosis.condiciones_detectadas.length + (showLines ? 1 : 0);
+
+  const analyzedImageUrls = useMemo(() => {
+    if (resultImageUrls.length > 0) return resultImageUrls;
+    const fromPayload = images
+      ?.filter((img) => img.path)
+      .map((img) => apiUrl(`/uploads/${img.path}`)) ?? [];
+    if (fromPayload.length > 0) return fromPayload;
+    if (image.path) return [apiUrl(`/uploads/${image.path}`)];
+    return [];
+  }, [image.path, images, resultImageUrls]);
+
   const matched = useMemo(
     () => getMatchedRecommendations(
       diagnosis.condiciones_detectadas.map((c) => c.id),
@@ -90,7 +101,8 @@ export function ResultsScreen() {
           <div className="grid lg:grid-cols-12 gap-6 mb-8">
             <div className="lg:col-span-4">
               <AnalyzedImagePanel
-                imageUrl={apiUrl(`/uploads/${image.path}`)}
+                imageUrl={analyzedImageUrls[0]}
+                imageUrls={analyzedImageUrls.length > 1 ? analyzedImageUrls : undefined}
                 severity={diagnosis.severidad_general}
                 title={diagnosis.mensaje_severidad.titulo}
                 summary={combined_diagnosis?.summary ?? diagnosis.resumen_general}
@@ -128,7 +140,10 @@ export function ResultsScreen() {
 
               {matched.length > 0 && (
                 <motion.div variants={item} className="surface-card p-6">
-                  <StructuredRecommendationsSection recommendations={matched} />
+                  <StructuredRecommendationsSection
+                    recommendations={matched}
+                    detectedConditions={diagnosis.condiciones_detectadas}
+                  />
                 </motion.div>
               )}
 
@@ -145,6 +160,7 @@ export function ResultsScreen() {
                   error={productsError}
                   queriesUsed={queriesUsed}
                   warning={productsWarning}
+                  multipleConditions={diagnosis.condiciones_detectadas.length > 1}
                 />
               </motion.div>
 
@@ -160,8 +176,17 @@ export function ResultsScreen() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <PrimaryButton label="Nuevo análisis" onClick={() => navigate('/image-picker')} className="flex-1" />
-            <PrimaryButton label="Volver al inicio" variant="secondary" onClick={() => navigate('/')} className="flex-1" />
+            <PrimaryButton
+              label="Nuevo análisis"
+              onClick={() => { resetKioskSession(); navigate('/consent'); }}
+              className="flex-1"
+            />
+            <PrimaryButton
+              label="Volver al inicio"
+              variant="secondary"
+              onClick={() => { resetKioskSession(); navigate('/'); }}
+              className="flex-1"
+            />
           </div>
         </div>
       </AppShell>

@@ -1,7 +1,5 @@
 import type { DetectedCondition } from '../../types';
 import { AlertIcon } from '../Icons';
-import { getConfidenceLevel } from '../../utils/severityColors';
-import { ConfidenceBadge } from '../ui/SeverityBadge';
 
 const COLOR_BORDER: Record<string, string> = {
   blue: 'border-l-blue-500',
@@ -23,8 +21,6 @@ interface Props {
 }
 
 export function SkinConditionCard({ condition, index }: Props) {
-  const confidenceLevel = getConfidenceLevel(condition.confianza_promedio);
-  const confidencePercent = Math.round(condition.confianza_promedio * 100);
   const borderColor = COLOR_BORDER[condition.color_ui] ?? COLOR_BORDER.blue;
   const bgColor = COLOR_BG[condition.color_ui] ?? COLOR_BG.blue;
 
@@ -40,16 +36,14 @@ export function SkinConditionCard({ condition, index }: Props) {
                 {index}
               </span>
               <h3 className="font-bold text-lg text-brand-900">{condition.label}</h3>
-              <ConfidenceBadge level={confidenceLevel} />
             </div>
             <p className="text-sm text-textSecondary leading-relaxed">{condition.descripcion}</p>
           </div>
 
-          <div className={`flex-shrink-0 ${bgColor} rounded-xl p-4 min-w-[110px] text-center border border-white`}>
-            <div className="text-3xl font-bold text-brand-700 leading-none">{confidencePercent}%</div>
-            <p className="text-xs font-semibold text-textMuted normal-case mt-1">Confianza</p>
-            <p className="text-xs text-textSecondary mt-2">
-              {condition.cantidad_detecciones} detección{condition.cantidad_detecciones !== 1 ? 'es' : ''}
+          <div className={`flex-shrink-0 ${bgColor} rounded-xl px-4 py-3 min-w-[110px] text-center border border-white`}>
+            <p className="text-2xl font-bold text-brand-700 leading-none">{condition.cantidad_detecciones}</p>
+            <p className="text-xs font-semibold text-textMuted normal-case mt-1">
+              detección{condition.cantidad_detecciones !== 1 ? 'es' : ''}
             </p>
           </div>
         </div>

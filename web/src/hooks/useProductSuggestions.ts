@@ -4,6 +4,7 @@ import type { DetectedCondition, Recommendation, SuggestedProduct } from '../typ
 import { resolveProductSearchQueries } from '../utils/productQueryBuilder';
 import {
   mapSearchItemToSuggestedProduct,
+  MAX_SUGGESTED_PRODUCTS,
   mergeDuplicateProducts,
   rankSuggestedProducts,
 } from '../utils/productSuggestionUtils';
@@ -25,8 +26,6 @@ export type UseProductSuggestionsResult = {
   source: string | null;
   refetch: () => void;
 };
-
-const MAX_PRODUCTS = 5;
 
 function buildStableKey(
   externalQueries?: string[],
@@ -54,7 +53,9 @@ export function useProductSuggestions({
   const [fetchToken, setFetchToken] = useState(0);
   const requestIdRef = useRef(0);
   const recommendationsRef = useRef<Recommendation[]>(matchedRecommendations ?? []);
+  const conditionsRef = useRef(detectedConditions ?? []);
   recommendationsRef.current = matchedRecommendations ?? [];
+  conditionsRef.current = detectedConditions ?? [];
 
   const stableKey = buildStableKey(externalQueries, matchedRecommendations, detectedConditions);
 
@@ -125,7 +126,8 @@ export function useProductSuggestions({
     const ranked = rankSuggestedProducts(
       merged,
       recommendationsRef.current,
-      MAX_PRODUCTS,
+      MAX_SUGGESTED_PRODUCTS,
+      conditionsRef.current,
     );
 
     setProducts(ranked);

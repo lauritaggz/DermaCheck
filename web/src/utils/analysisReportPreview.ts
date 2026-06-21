@@ -18,20 +18,3 @@ export function openAnalysisReportPreview(html: string): boolean {
 
   return true;
 }
-
-/**
- * Simula el envío por correo sin persistir el destinatario.
- */
-export async function simulateAnalysisEmailSend(
-  _recipientEmail: string,
-  html: string,
-): Promise<{ ok: true; message: string }> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-  if (!html.includes('DermaCheck')) {
-    throw new Error('No se pudo generar el informe.');
-  }
-  return {
-    ok: true,
-    message: 'Envío simulado correctamente. Esta función será integrada próximamente.',
-  };
-}

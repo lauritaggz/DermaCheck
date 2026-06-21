@@ -8,11 +8,23 @@ const MESSAGES = [
 ];
 
 interface Props {
+  /** Una sola imagen (compatibilidad). */
   imageUrl?: string;
+  /** Varias imágenes: se muestran en rotación durante el análisis. */
+  imageUrls?: string[];
 }
 
-export function ScanLoadingAnimation({ imageUrl }: Props) {
+export function ScanLoadingAnimation({ imageUrl, imageUrls }: Props) {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const urls = imageUrls?.length
+    ? imageUrls
+    : imageUrl
+      ? [imageUrl]
+      : [];
+
+  const isDoubleAnalysis = urls.length >= 2;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -21,11 +33,40 @@ export function ScanLoadingAnimation({ imageUrl }: Props) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!isDoubleAnalysis) {
+      setActiveImageIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % urls.length);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [isDoubleAnalysis, urls.length]);
+
+  const currentUrl = urls[activeImageIndex];
+
   return (
     <div className="relative w-full max-w-xs mx-auto">
       <div className="scan-corners ai-card aspect-[3/4] overflow-hidden relative">
-        {imageUrl ? (
-          <img src={imageUrl} alt="Imagen en análisis" className="w-full h-full object-cover" />
+        {currentUrl ? (
+          <>
+            {urls.map((url, index) => (
+              <img
+                key={url}
+                src={url}
+                alt={`Imagen ${index + 1} en análisis`}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out ${
+                  index === activeImageIndex ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
+            {isDoubleAnalysis && (
+              <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/55 text-white text-xs font-semibold backdrop-blur-sm z-10">
+                Foto {activeImageIndex + 1} de {urls.length}
+              </span>
+            )}
+          </>
         ) : (
           <div className="w-full h-full bg-brand-50 flex items-center justify-center">
             <div className="w-20 h-20 rounded-full border-4 border-teal-200 border-t-teal-500 animate-spin" />
@@ -57,7 +98,9 @@ export function ScanLoadingAnimation({ imageUrl }: Props) {
         role="status"
         aria-live="polite"
       >
-        {MESSAGES[messageIndex]}
+        {isDoubleAnalysis
+          ? `Analizando fotografía ${activeImageIndex + 1} de ${urls.length}…`
+          : MESSAGES[messageIndex]}
       </p>
     </div>
   );

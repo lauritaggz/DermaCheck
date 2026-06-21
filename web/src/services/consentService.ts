@@ -1,5 +1,5 @@
 import { AUTH_ERRORS } from '../constants/authMessages';
-import { LEGAL_DOCUMENTS, LEGAL_DOC_VERSION } from '../constants/legalDocuments';
+import { LEGAL_DOCUMENTS } from '../constants/legalDocuments';
 import { resolveKioskUserId } from './kioskService';
 import { apiUrl, isApiAvailable } from '../utils/api';
 import type { ConsentStatus, DocumentAcceptanceRecord } from '../types';
@@ -14,6 +14,11 @@ type ApiAcceptanceRow = {
   version_accepted: string;
   accepted_at: string;
   status: string;
+};
+
+export type AcceptKioskConsentOptions = {
+  sessionId: string;
+  trainingConsentAccepted: boolean;
 };
 
 function mapApiAcceptance(row: ApiAcceptanceRow): DocumentAcceptanceRecord {
@@ -33,11 +38,24 @@ function latestAcceptanceAt(records: DocumentAcceptanceRecord[]): string | null 
 
 export const consentService = {
   /**
-   * Registra aceptación de todos los documentos requeridos en el servidor.
+   * Registra evidencia de aceptación legal en el servidor (sin persistir en el cliente).
    */
-  async acceptAllRequiredDocuments(userId: string): Promise<ConsentStatus> {
+  async acceptKioskConsent(options: AcceptKioskConsentOptions): Promise<ConsentStatus> {
     if (!isApiAvailable()) {
       throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
+    }
+
+    const kioskUserId = await resolveKioskUserId();
+    const items: Array<{ slug: string; version: string }> = [
+      { slug: LEGAL_DOCUMENTS.consent_informed.slug, version: LEGAL_DOCUMENTS.consent_informed.version },
+      { slug: LEGAL_DOCUMENTS.privacy_policy.slug, version: LEGAL_DOCUMENTS.privacy_policy.version },
+    ];
+
+    if (options.trainingConsentAccepted) {
+      items.push({
+        slug: LEGAL_DOCUMENTS.consent_training.slug,
+        version: LEGAL_DOCUMENTS.consent_training.version,
+      });
     }
 
     const url = apiUrl(`${API_V1}/consents/accept`);
@@ -47,11 +65,17 @@ export const consentService = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          user_id: userId,
-          items: [
-            { slug: LEGAL_DOCUMENTS.consent_informed.slug, version: LEGAL_DOCUMENTS.consent_informed.version },
-            { slug: LEGAL_DOCUMENTS.privacy_policy.slug, version: LEGAL_DOCUMENTS.privacy_policy.version },
-          ],
+          user_id: kioskUserId,
+          session_id: options.sessionId,
+          items,
+          consent_analysis: true,
+          consent_privacy: true,
+          consent_training: options.trainingConsentAccepted,
+          consent_analysis_version: LEGAL_DOCUMENTS.consent_informed.version,
+          privacy_policy_version: LEGAL_DOCUMENTS.privacy_policy.version,
+          training_consent_version: options.trainingConsentAccepted
+            ? LEGAL_DOCUMENTS.consent_training.version
+            : null,
         }),
       });
     } catch {
@@ -65,49 +89,24 @@ export const consentService = {
     const data = (await res.json()) as { acceptances: ApiAcceptanceRow[] };
     const acceptances = (data.acceptances ?? []).map(mapApiAcceptance);
     const synced = new Date().toISOString();
+    const legalVersion = LEGAL_DOCUMENTS.consent_informed.version;
 
     return {
       accepted: true,
       acceptedAt: latestAcceptanceAt(acceptances),
-      policyVersion: LEGAL_DOC_VERSION,
+      sessionId: options.sessionId,
+      consentAnalysisAccepted: true,
+      privacyPolicyAccepted: true,
+      trainingConsentAccepted: options.trainingConsentAccepted,
+      allowTrainingStorage: options.trainingConsentAccepted,
+      consentAnalysisVersion: LEGAL_DOCUMENTS.consent_informed.version,
+      privacyPolicyVersion: LEGAL_DOCUMENTS.privacy_policy.version,
+      trainingConsentVersion: options.trainingConsentAccepted
+        ? LEGAL_DOCUMENTS.consent_training.version
+        : null,
+      legalVersion,
       acceptances,
       lastSyncedAt: synced,
     };
-  },
-
-  /** Consulta histórico de aceptaciones en el servidor. */
-  async fetchUserAcceptances(userId: string): Promise<DocumentAcceptanceRecord[]> {
-    if (!isApiAvailable()) {
-      throw new Error(AUTH_ERRORS.SERVER_REQUIRED);
-    }
-    const url = apiUrl(`${API_V1}/consents/users/${encodeURIComponent(userId)}/acceptances`);
-    let res: Response;
-    try {
-      res = await fetch(url, { headers: { Accept: 'application/json' } });
-    } catch {
-      throw new Error(formatApiNetworkError());
-    }
-    if (!res.ok) {
-      throw new Error(await parseApiErrorMessage(res));
-    }
-    const rows = (await res.json()) as ApiAcceptanceRow[];
-    return Array.isArray(rows) ? rows.map(mapApiAcceptance) : [];
-  },
-
-  /**
-   * Registra consentimiento en tótem usando el usuario técnico de kiosk.
-   * Si el servidor no está disponible, devuelve aceptación solo en cliente.
-   */
-  async acceptForKioskSession(): Promise<ConsentStatus> {
-    try {
-      const userId = await resolveKioskUserId();
-      return await this.acceptAllRequiredDocuments(userId);
-    } catch {
-      return {
-        accepted: true,
-        acceptedAt: new Date().toISOString(),
-        policyVersion: LEGAL_DOC_VERSION,
-      };
-    }
   },
 };

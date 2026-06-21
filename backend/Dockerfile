@@ -4,9 +4,10 @@ FROM python:3.12-slim-bookworm
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    TZ=America/Santiago
 
-# Instalar dependencias del sistema para PyMySQL
+# Instalar dependencias del sistema para PyMySQL y zona horaria
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
@@ -14,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libgl1 \
     libglib2.0-0 \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -23,7 +25,7 @@ COPY app ./app
 COPY ml_models ./ml_models
 
 # Crear directorios necesarios
-RUN mkdir -p /app/static/uploads
+RUN mkdir -p /app/static/uploads /app/storage/training_images /app/storage/job_queue
 
 EXPOSE 8000
 

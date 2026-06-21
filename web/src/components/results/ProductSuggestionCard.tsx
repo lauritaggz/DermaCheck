@@ -40,6 +40,37 @@ export function ProductSuggestionCard({ product }: Props) {
         )}
       </div>
 
+      {product.matchedConditions && product.matchedConditions.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700 mb-1.5">
+            Relacionado con
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {product.matchedConditions.map((condition) => (
+              <span
+                key={condition}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200"
+              >
+                {condition}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {product.matchedIngredients && product.matchedIngredients.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {product.matchedIngredients.map((ingredient) => (
+            <span
+              key={ingredient}
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200"
+            >
+              {ingredient}
+            </span>
+          ))}
+        </div>
+      )}
+
       {cheapestLabel && (
         <p className="text-sm font-semibold text-brand-800">
           Más económico: {cheapestPriceLabel} en {cheapestLabel}

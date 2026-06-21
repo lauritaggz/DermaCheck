@@ -180,6 +180,10 @@ export interface SuggestedProduct {
   fecha_consulta?: string;
   matchedQuery?: string;
   relevanceScore?: number;
+  /** Componentes recomendados detectados en el producto. */
+  matchedIngredients?: string[];
+  /** Afecciones asociadas según componentes coincidentes. */
+  matchedConditions?: string[];
 }
 
 /** Fila devuelta por el backend (#116) o reconstruida en modo local. */
@@ -192,14 +196,42 @@ export interface DocumentAcceptanceRecord {
 }
 
 export interface ConsentStatus {
+  /** true si se aceptaron consentimiento informado y política de privacidad vigentes. */
   accepted: boolean;
   acceptedAt: string | null;
-  /** Versión alineada con el catálogo legal del servidor. */
-  policyVersion: string;
-  /** Registros por documento aceptado (consentimiento, privacidad, etc.). */
+  /** Identificador anónimo del flujo actual (tótem). */
+  sessionId: string | null;
+  consentAnalysisAccepted: boolean;
+  privacyPolicyAccepted: boolean;
+  trainingConsentAccepted: boolean;
+  /** Flag enviado al backend para conservar imagen con fines de entrenamiento. */
+  allowTrainingStorage: boolean;
+  consentAnalysisVersion: string | null;
+  privacyPolicyVersion: string | null;
+  trainingConsentVersion: string | null;
+  /** Versión legal vigente del flujo (p. ej. consentimiento informado). */
+  legalVersion: string | null;
+  /** Registros por documento aceptado en el servidor. */
   acceptances?: DocumentAcceptanceRecord[];
-  /** Última sincronización con API (ISO), si aplica. */
   lastSyncedAt?: string | null;
+}
+
+/** Campos de consentimiento enviados con la imagen al analizar. */
+export interface AnalysisConsentPayload {
+  consentAccepted: boolean;
+  privacyAccepted: boolean;
+  allowTrainingStorage: boolean;
+  legalVersion: string;
+  sessionId: string;
+}
+
+export type AnalysisJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface AnalysisJobSubmitResponse {
+  jobId: string;
+  status: AnalysisJobStatus;
+  position: number;
+  pollIntervalSeconds: number;
 }
 
 export interface ImageAsset {

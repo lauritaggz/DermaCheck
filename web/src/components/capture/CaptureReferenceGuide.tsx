@@ -1,4 +1,4 @@
-import { CAPTURE_POSE_HINTS, CAPTURE_REFERENCE_IMAGE } from '../../constants/captureAssets';
+import { CAPTURE_MODE_SUMMARY, CAPTURE_POSE_HINTS, CAPTURE_REFERENCE_IMAGE } from '../../constants/captureAssets';
 
 interface Props {
   /** Muestra ambas poses o solo la pose activa de la captura actual. */
@@ -55,7 +55,7 @@ export function CaptureReferenceGuide({
       <div className="text-center mb-4">
         <p className="text-sm font-semibold text-brand-900">Ejemplo de captura (1 o 2 fotos)</p>
         <p className="text-xs text-textSecondary mt-1">
-          Puedes tomar una sola foto o dos ángulos como en la referencia. No uses esta imagen para el análisis.
+          {CAPTURE_MODE_SUMMARY} No uses esta imagen para el análisis.
         </p>
       </div>
 

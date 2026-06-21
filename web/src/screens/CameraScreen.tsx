@@ -4,8 +4,9 @@ import { PageTransition } from '../components/PageTransition';
 import { AppShell } from '../components/layout/AppShell';
 import { FlowStepper } from '../components/layout/FlowStepper';
 import { CameraSelector } from '../components/capture/CameraSelector';
-import { CaptureReferenceGuide } from '../components/capture/CaptureReferenceGuide';
+import { SelectedCapturePreviews } from '../components/capture/SelectedCapturePreviews';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { CAPTURE_POSE_HINTS } from '../constants/captureAssets';
 import { useAppState, MAX_FACE_CAPTURES } from '../context/AppContext';
 import { useCameraStream } from '../hooks/useCameraStream';
 import { useLiveImageQuality } from '../hooks/useLiveImageQuality';
@@ -89,10 +90,14 @@ export function CameraScreen() {
 
   const isGood = imageQuality?.isGood;
 
+  const continueLabel = pendingImages.length >= 2
+    ? 'Continuar a vista previa'
+    : 'Continuar con 1 foto';
+
   return (
     <PageTransition>
       <AppShell variant="focus">
-        <div className="min-h-screen flex flex-col px-4 py-6 max-w-3xl mx-auto">
+        <div className="min-h-screen flex flex-col px-4 py-6 max-w-3xl mx-auto pb-28">
           <button
             type="button"
             onClick={() => { stopStream(); clearPendingImages(); navigate('/image-picker'); }}
@@ -105,18 +110,28 @@ export function CameraScreen() {
 
           <div className="mb-3 px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-center text-sm text-white/90">
             {pendingImages.length === 0
-              ? 'Captura 1 foto (puedes agregar una segunda opcional)'
+              ? '1 foto de frente centrada, o 2 laterales (un lado y el otro)'
               : pendingImages.length === 1
-                ? '1 foto lista · Segunda foto opcional'
+                ? '1 foto lista · Agrega el otro lateral o continúa'
                 : '2 fotos listas'}
           </div>
 
-          <CaptureReferenceGuide
-            variant="pose"
-            captureIndex={captureNumber}
-            compact
-            className="mb-3 px-1"
-          />
+          <div className="mb-3 px-4 py-3 rounded-xl bg-white/10 border border-white/20">
+            <p className="text-xs font-semibold text-white/90 mb-1">
+              Foto {captureNumber}{captureNumber >= 2 ? '' : ' (2ª opcional)'}
+            </p>
+            <p className="text-[11px] sm:text-xs text-white/70 leading-snug">
+              {CAPTURE_POSE_HINTS[Math.min(Math.max(captureNumber, 1), 2) - 1]}
+            </p>
+          </div>
+
+          {pendingImages.length > 0 && (
+            <SelectedCapturePreviews
+              images={pendingImages}
+              variant="dark"
+              className="mb-3"
+            />
+          )}
 
           <CameraSelector
             resolvedCameras={resolvedCameras}
@@ -158,15 +173,7 @@ export function CameraScreen() {
               </div>
             )}
 
-            <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-3 px-4">
-              {canContinue && !atMaxCaptures && (
-                <PrimaryButton
-                  label="Continuar con 1 foto"
-                  variant="secondary"
-                  onClick={handleContinue}
-                  className="w-full max-w-xs !min-h-[44px] !text-sm"
-                />
-              )}
+            <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center px-4">
               <button
                 type="button"
                 onClick={captureImage}
@@ -178,6 +185,17 @@ export function CameraScreen() {
               />
             </div>
           </div>
+
+          {canContinue && !atMaxCaptures && (
+            <div className="mt-4">
+              <PrimaryButton
+                label={continueLabel}
+                variant="secondary"
+                onClick={handleContinue}
+                className="w-full !min-h-[56px] !text-base sm:!text-lg"
+              />
+            </div>
+          )}
 
           <canvas ref={canvasRef} className="hidden" />
         </div>

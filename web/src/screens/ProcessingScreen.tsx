@@ -8,9 +8,11 @@ import { AnalysisProgress } from '../components/analysis/AnalysisProgress';
 import { ScanLoadingAnimation } from '../components/analysis/ScanLoadingAnimation';
 import { ErrorState } from '../components/ui/ErrorState';
 import { useAppState, MIN_FACE_CAPTURES } from '../context/AppContext';
-import { useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
+import { buildAnalysisConsentPayload, useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
+import type { QueueProgressUpdate } from '../services/analysisJobService';
+import { isConsentComplete } from '../utils/consentHelpers';
 import { resolveKioskUserId } from '../services/kioskService';
-import type { ImageAsset } from '../types';
+import type { AnalysisJobStatus, ImageAsset } from '../types';
 
 const STEPS = [
   { label: 'Cargando imágenes', threshold: 20 },
@@ -26,28 +28,35 @@ export function ProcessingScreen() {
     setAnalysisResult,
     clearPendingImages,
     clearImagesForAnalysis,
+    setResultImageUrls,
     consent,
   } = useAppState();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const { analyzeFaceImage, analyzeFaceImagesDouble, error, clearError } = useDermatologyAnalysis();
   const runStartedRef = useRef(false);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>();
+  const analysisLockRef = useRef<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [processingCount, setProcessingCount] = useState(0);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [queueStatus, setQueueStatus] = useState<AnalysisJobStatus | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
+
+  const handleQueueUpdate = ({ status, position }: QueueProgressUpdate) => {
+    setQueueStatus(status);
+    setQueuePosition(position);
+  };
 
   useEffect(() => {
-    return () => {
-      runStartedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (runStartedRef.current) return;
-
     const images: ImageAsset[] = imagesForAnalysis ?? pendingImages;
 
-    if (!consent.accepted) {
+    if (!isConsentComplete(consent)) {
+      navigate('/consent');
+      return;
+    }
+
+    const consentPayload = buildAnalysisConsentPayload(consent);
+    if (!consentPayload) {
       navigate('/consent');
       return;
     }
@@ -57,13 +66,17 @@ export function ProcessingScreen() {
       return;
     }
 
+    const runKey = `${consentPayload.sessionId}:${images.length}:${images.map((img) => img.blob.size).join('-')}`;
+    if (runStartedRef.current || analysisLockRef.current === runKey) return;
+
     runStartedRef.current = true;
-    setPreviewUrl(images[0]?.objectUrl);
+    analysisLockRef.current = runKey;
+    setPreviewUrls(images.map((img) => img.objectUrl));
     setProcessingCount(images.length);
 
     const isDouble = images.length >= 2;
 
-    async function run() {
+    async function run(consentPayload: NonNullable<ReturnType<typeof buildAnalysisConsentPayload>>) {
       try {
         const userId = await resolveKioskUserId();
         const result = isDouble
@@ -71,25 +84,31 @@ export function ProcessingScreen() {
               imageBlob1: images[0].blob,
               imageBlob2: images[1].blob,
               userId,
+              consent: consentPayload,
               confidenceThreshold: 0.25,
+              onQueueUpdate: handleQueueUpdate,
             })
           : await analyzeFaceImage({
               imageBlob: images[0].blob,
               userId,
+              consent: consentPayload,
               confidenceThreshold: 0.25,
+              onQueueUpdate: handleQueueUpdate,
             });
 
         if (!result) return;
 
+        setResultImageUrls(images.map((img) => img.objectUrl));
         setAnalysisResult(result);
         setProgress(100);
-        clearPendingImages();
+        clearPendingImages({ revokeUrls: false });
         clearImagesForAnalysis();
         setTimeout(() => navigate('/analysis/results'), 500);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error al iniciar el análisis';
         setBootError(message);
         runStartedRef.current = false;
+        analysisLockRef.current = null;
       }
     }
 
@@ -103,14 +122,15 @@ export function ProcessingScreen() {
       });
     }, 500);
 
-    run();
+    run(consentPayload);
     return () => clearInterval(interval);
   }, [
     analyzeFaceImage,
     analyzeFaceImagesDouble,
     clearImagesForAnalysis,
     clearPendingImages,
-    consent.accepted,
+    consent,
+    setResultImageUrls,
     imagesForAnalysis,
     navigate,
     pendingImages,
@@ -118,6 +138,23 @@ export function ProcessingScreen() {
   ]);
 
   const displayError = bootError ?? error;
+
+  const queueMessage = (() => {
+    if (queueStatus === 'queued') {
+      if (queuePosition === 0) {
+        return 'Próximo en procesarse';
+      }
+      if (queuePosition !== null && queuePosition > 0) {
+        const label = queuePosition === 1 ? 'persona' : 'personas';
+        return `En cola · ${queuePosition} ${label} antes que tú`;
+      }
+      return 'En cola de espera';
+    }
+    if (queueStatus === 'running') {
+      return null;
+    }
+    return null;
+  })();
 
   if (displayError) {
     return (
@@ -130,6 +167,7 @@ export function ProcessingScreen() {
               clearError();
               setBootError(null);
               runStartedRef.current = false;
+              analysisLockRef.current = null;
               navigate('/preview');
             }}
           />
@@ -145,22 +183,34 @@ export function ProcessingScreen() {
           <FlowStepper currentStep={4} />
           <SectionHeader
             badge="Procesamiento IA"
-            title="Analizando tu piel"
+            title={queueStatus === 'queued' ? 'Esperando turno' : 'Analizando tu piel'}
             description={
-              processingCount >= 2
-                ? 'Procesando 2 fotografías faciales'
-                : 'Procesando tu fotografía facial'
+              queueMessage
+                ?? (processingCount >= 2
+                  ? 'Procesando 2 fotografías faciales'
+                  : 'Procesando tu fotografía facial')
             }
             align="center"
           />
 
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <ScanLoadingAnimation imageUrl={previewUrl} />
-            <AnalysisProgress progress={progress} steps={STEPS} />
-          </div>
+          {queueStatus === 'queued' ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-6">
+              <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+              <p className="text-lg text-textMuted text-center max-w-md">
+                {queueMessage ?? 'En cola de espera'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <ScanLoadingAnimation imageUrls={previewUrls} />
+              <AnalysisProgress progress={progress} steps={STEPS} />
+            </div>
+          )}
 
           <p className="text-center text-sm text-textMuted mt-8">
-            Suele tomar 5–10 segundos. No cierres esta ventana.
+            {queueStatus === 'queued'
+              ? 'El análisis comenzará en cuanto termine el turno anterior.'
+              : 'Suele tomar 5–10 segundos. No cierres esta ventana.'}
           </p>
         </div>
       </AppShell>

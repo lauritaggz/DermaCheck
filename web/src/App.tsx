@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider, useAppState } from './context/AppContext';
+import { isConsentComplete } from './utils/consentHelpers';
 
 // Eager loading para pantallas críticas
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -30,12 +31,12 @@ function LoadingFallback() {
 /** Flujo tótem: requiere consentimiento, no login. */
 function ConsentRequiredRoute({ children }: { children: React.ReactNode }) {
   const { consent } = useAppState();
-  return consent.accepted ? <>{children}</> : <Navigate to="/consent" replace />;
+  return isConsentComplete(consent) ? <>{children}</> : <Navigate to="/consent" replace />;
 }
 
 function ConsentPendingRoute({ children }: { children: React.ReactNode }) {
   const { consent } = useAppState();
-  return consent.accepted ? <Navigate to="/instructions" replace /> : <>{children}</>;
+  return isConsentComplete(consent) ? <Navigate to="/instructions" replace /> : <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {

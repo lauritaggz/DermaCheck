@@ -97,6 +97,45 @@ export function groupRecommendationsByTime(recommendations: Recommendation[]) {
   return { morningSteps, nightSteps, generalSummaries };
 }
 
+export function getRecommendationDisplayLabel(
+  rec: Recommendation,
+  detectedConditions: { id: string; label: string }[] = [],
+): string {
+  for (const key of rec.relatedConditionKeys ?? []) {
+    const normalized = normalizeConditionKey(key);
+    const found = detectedConditions.find(
+      (condition) => normalizeConditionKey(condition.id) === normalized,
+    );
+    if (found) return found.label;
+  }
+  return rec.title;
+}
+
+/** Ordena recomendaciones según el orden de afecciones detectadas en el análisis. */
+export function sortRecommendationsByDetectedConditions(
+  recommendations: Recommendation[],
+  detectedConditions: { id: string }[],
+): Recommendation[] {
+  if (detectedConditions.length === 0) return recommendations;
+
+  const order = new Map(
+    detectedConditions.map((condition, index) => [
+      normalizeConditionKey(condition.id),
+      index,
+    ]),
+  );
+
+  return [...recommendations].sort((a, b) => {
+    const indexA = Math.min(
+      ...(a.relatedConditionKeys ?? []).map((key) => order.get(normalizeConditionKey(key)) ?? Number.MAX_SAFE_INTEGER),
+    );
+    const indexB = Math.min(
+      ...(b.relatedConditionKeys ?? []).map((key) => order.get(normalizeConditionKey(key)) ?? Number.MAX_SAFE_INTEGER),
+    );
+    return indexA - indexB;
+  });
+}
+
 export function getStructuredIngredientDetails(
   recommendations: Recommendation[],
 ): SuggestedIngredientDetail[] {

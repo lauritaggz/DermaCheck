@@ -23,24 +23,3 @@ export function SeverityBadge({ level, size = 'md' }: Props) {
     </span>
   );
 }
-
-export function ConfidenceBadge({
-  level,
-}: {
-  level: 'bajo' | 'medio' | 'alto';
-}) {
-  const config = {
-    bajo: { label: 'Confianza baja', class: 'bg-slate-100 text-slate-600 border-slate-200' },
-    medio: { label: 'Confianza media', class: 'bg-amber-50 text-amber-700 border-amber-200' },
-    alto: { label: 'Confianza alta', class: 'bg-teal-50 text-teal-700 border-teal-200' },
-  }[level];
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${config.class}`}
-      role="status"
-    >
-      {config.label}
-    </span>
-  );
-}

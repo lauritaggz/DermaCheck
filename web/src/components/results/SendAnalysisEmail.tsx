@@ -3,30 +3,36 @@ import { PrimaryButton } from '../PrimaryButton';
 import { TextField } from '../TextField';
 import type { AnalysisWithDiagnosis } from '../../types';
 import { buildAnalysisEmailHtml } from '../../utils/buildAnalysisEmailHtml';
-import { openAnalysisReportPreview, simulateAnalysisEmailSend } from '../../utils/analysisReportPreview';
+import { openAnalysisReportPreview } from '../../utils/analysisReportPreview';
 import { isValidEmail } from '../../utils/validateEmail';
+import { sendAnalysisSummaryEmail } from '../../services/analysisEmailService';
 
 interface Props {
   analysis: AnalysisWithDiagnosis;
 }
 
-type Feedback = { type: 'success' | 'error'; message: string } | null;
+type SendStatus = 'idle' | 'validating' | 'sending' | 'success' | 'error';
 
 export function SendAnalysisEmail({ analysis }: Props) {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [status, setStatus] = useState<SendStatus>('idle');
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [loadingSend, setLoadingSend] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+
+  const isBusy = status === 'validating' || status === 'sending' || loadingPreview;
 
   function validateInput(): string | null {
+    setStatus('validating');
     const trimmed = email.trim();
     if (!trimmed) {
       setEmailError('Ingresa un correo electrónico.');
+      setStatus('idle');
       return null;
     }
     if (!isValidEmail(trimmed)) {
       setEmailError('El formato del correo no es válido.');
+      setStatus('idle');
       return null;
     }
     setEmailError(null);
@@ -34,107 +40,112 @@ export function SendAnalysisEmail({ analysis }: Props) {
   }
 
   async function handlePreview() {
+    if (loadingPreview || status === 'sending') return;
     const recipient = validateInput();
     if (!recipient) return;
 
     setLoadingPreview(true);
-    setFeedback(null);
+    setFeedbackMessage(null);
+    setStatus('idle');
     try {
       const html = buildAnalysisEmailHtml(analysis, recipient);
       const opened = openAnalysisReportPreview(html);
       if (!opened) {
-        setFeedback({
-          type: 'error',
-          message: 'No se pudo abrir la vista previa. Permite ventanas emergentes en el navegador.',
-        });
+        setStatus('error');
+        setFeedbackMessage(
+          'No se pudo abrir la vista previa. Permite ventanas emergentes en el navegador.',
+        );
         return;
       }
-      setFeedback({
-        type: 'success',
-        message: 'Vista previa generada correctamente. Usa «Guardar como PDF» en el diálogo de impresión.',
-      });
+      setStatus('success');
+      setFeedbackMessage(
+        'Vista previa generada correctamente. Usa «Guardar como PDF» en el diálogo de impresión.',
+      );
     } finally {
       setLoadingPreview(false);
     }
   }
 
-  async function handleSimulateSend() {
+  async function handleSend() {
+    if (status === 'sending' || loadingPreview) return;
     const recipient = validateInput();
     if (!recipient) return;
 
-    setLoadingSend(true);
-    setFeedback(null);
-    try {
-      const html = buildAnalysisEmailHtml(analysis, recipient);
-      const result = await simulateAnalysisEmailSend(recipient, html);
-      setFeedback({ type: 'success', message: result.message });
+    setStatus('sending');
+    setFeedbackMessage(null);
+
+    const result = await sendAnalysisSummaryEmail(recipient, analysis);
+
+    if (result.success) {
+      setStatus('success');
+      setFeedbackMessage(result.message);
       setEmail('');
-    } catch (err) {
-      setFeedback({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'No se pudo simular el envío.',
-      });
-    } finally {
-      setLoadingSend(false);
+      return;
     }
+
+    setStatus('error');
+    setFeedbackMessage(result.message || 'No pudimos enviar el resumen. Intenta nuevamente.');
   }
 
   return (
     <div className="surface-card p-6">
-      <h2 className="text-xl font-bold text-brand-900 mb-1">Recibir resumen por correo</h2>
+      <h2 className="text-xl font-bold text-brand-900 mb-1">Recibe tu resumen por correo</h2>
       <p className="text-sm text-textSecondary mb-5">
-        Ingresa tu correo para previsualizar o simular el envío del informe. El correo no se guarda en el sistema.
+        Ingresa tu correo para recibir una copia del resumen de tu análisis.
       </p>
 
       <TextField
         label="Correo electrónico"
         type="email"
         inputMode="email"
-        autoComplete="email"
+        autoComplete="off"
         placeholder="ejemplo@correo.com"
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);
           setEmailError(null);
-          setFeedback(null);
+          if (status !== 'idle') {
+            setStatus('idle');
+            setFeedbackMessage(null);
+          }
         }}
         error={emailError ?? undefined}
       />
 
+      <p className="text-xs text-textMuted mb-4">
+        Tu correo se usará solo para enviar este resumen y no será almacenado.
+      </p>
+
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
         <PrimaryButton
-          label={loadingPreview ? 'Generando…' : 'Generar vista previa'}
+          label={loadingPreview ? 'Generando…' : 'Previsualizar informe'}
           variant="secondary"
           onClick={handlePreview}
           loading={loadingPreview}
-          disabled={loadingPreview || loadingSend}
+          disabled={isBusy}
           className="w-full"
         />
         <PrimaryButton
-          label={loadingSend ? 'Enviando…' : 'Simular envío'}
-          onClick={handleSimulateSend}
-          loading={loadingSend}
-          disabled={loadingPreview || loadingSend}
+          label={status === 'sending' ? 'Enviando…' : 'Enviar resumen'}
+          onClick={handleSend}
+          loading={status === 'sending'}
+          disabled={isBusy}
           className="w-full"
         />
       </div>
 
-      {feedback && (
+      {feedbackMessage && (
         <div
           className={`p-4 rounded-xl text-sm border-2 ${
-            feedback.type === 'success'
+            status === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-red-50 border-red-200 text-red-700'
           }`}
           role="status"
         >
-          {feedback.message}
+          {feedbackMessage}
         </div>
       )}
-
-      <p className="text-xs text-textMuted mt-4">
-        MVP: el envío real por correo se integrará próximamente. Por ahora solo se genera la vista previa del informe.
-      </p>
     </div>
   );
 }

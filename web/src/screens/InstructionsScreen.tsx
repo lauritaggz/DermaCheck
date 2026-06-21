@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAppState } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { PrimaryButton } from '../components';
 import { PageTransition } from '../components/PageTransition';
@@ -17,18 +18,19 @@ const STEPS = [
     desc: 'La app validará la calidad. Óvalo verde = listo para capturar.',
     quality: true },
   { n: 3, icon: TargetIcon, color: 'bg-teal-500', title: 'Captura 1 o 2 imágenes',
-    desc: 'Toma al menos una fotografía del rostro. Una segunda foto en otro ángulo es opcional y mejora el análisis combinado.',
+    desc: '1 fotografía de frente centrada, o 2 laterales (un lado y el otro) como en la referencia.',
     note: 'Recibirás un reporte combinado con recomendaciones orientativas en segundos.' },
 ];
 
 export function InstructionsScreen() {
   const navigate = useNavigate();
+  const { resetKioskSession } = useAppState();
 
   return (
     <PageTransition>
       <AppShell>
         <div className="max-w-3xl mx-auto px-4 py-8 min-h-screen">
-          <button type="button" onClick={() => navigate('/')}
+          <button type="button" onClick={() => { resetKioskSession(); navigate('/'); }}
             className="mb-6 flex items-center gap-2 text-sm text-textSecondary hover:text-brand-600 font-medium transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

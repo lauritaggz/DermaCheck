@@ -56,9 +56,3 @@ export function getConditionColorClasses(color: string): string {
 export function getConditionDotClass(color: string): string {
   return CONDITION_DOT[color] ?? CONDITION_DOT.blue;
 }
-
-export function getConfidenceLevel(confidence: number): 'bajo' | 'medio' | 'alto' {
-  if (confidence >= 0.7) return 'alto';
-  if (confidence >= 0.4) return 'medio';
-  return 'bajo';
-}

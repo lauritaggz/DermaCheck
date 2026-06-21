@@ -1,27 +1,32 @@
 import { useCallback, useState } from 'react';
-import type { AnalysisWithDiagnosis } from '../types';
+import type { AnalysisConsentPayload, AnalysisWithDiagnosis } from '../types';
 import {
   isCombinedFacialAnalysisResponse,
   mapCombinedFacialAnalysis,
 } from '../services/analysisMappers';
-import { apiUrl } from '../utils/api';
-import { loggedFetch } from '../utils/loggedFetch';
-import { parseApiErrorMessage } from '../utils/apiErrors';
+import {
+  pollUntilComplete,
+  submitAnalysisJob,
+  type QueueProgressUpdate,
+} from '../services/analysisJobService';
 import { loggerService } from '../services/loggerService';
 
 interface AnalyzeParams {
   imageBlob: Blob;
   userId: string;
+  consent: AnalysisConsentPayload;
   confidenceThreshold?: number;
-  /** Si se omite, el backend usa app/config.py (expression_lines_conf_threshold). */
   expressionLinesConf?: number;
+  onQueueUpdate?: (update: QueueProgressUpdate) => void;
 }
 
 interface AnalyzeDoubleParams {
   imageBlob1: Blob;
   imageBlob2: Blob;
   userId: string;
+  consent: AnalysisConsentPayload;
   confidenceThreshold?: number;
+  onQueueUpdate?: (update: QueueProgressUpdate) => void;
 }
 
 interface UseDermatologyAnalysisResult {
@@ -30,6 +35,28 @@ interface UseDermatologyAnalysisResult {
   analyzeFaceImage: (params: AnalyzeParams) => Promise<AnalysisWithDiagnosis | null>;
   analyzeFaceImagesDouble: (params: AnalyzeDoubleParams) => Promise<AnalysisWithDiagnosis | null>;
   clearError: () => void;
+}
+
+function appendConsentFields(formData: FormData, consent: AnalysisConsentPayload) {
+  formData.append('consent_accepted', String(consent.consentAccepted));
+  formData.append('privacy_accepted', String(consent.privacyAccepted));
+  formData.append('allow_training_storage', String(consent.allowTrainingStorage));
+  formData.append('legal_version', consent.legalVersion);
+  formData.append('session_id', consent.sessionId);
+}
+
+async function runAnalysisJob(
+  formData: FormData,
+  onQueueUpdate: ((update: QueueProgressUpdate) => void) | undefined,
+): Promise<AnalysisWithDiagnosis> {
+  const submit = await submitAnalysisJob(formData);
+  onQueueUpdate?.({ status: submit.status, position: submit.position });
+
+  const raw = await pollUntilComplete(submit.jobId, onQueueUpdate);
+  const payload: AnalysisWithDiagnosis = isCombinedFacialAnalysisResponse(raw)
+    ? mapCombinedFacialAnalysis(raw)
+    : (raw as AnalysisWithDiagnosis);
+  return payload;
 }
 
 export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
@@ -43,13 +70,17 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
   const analyzeFaceImage = useCallback(async ({
     imageBlob,
     userId,
+    consent,
     confidenceThreshold = 0.25,
     expressionLinesConf,
+    onQueueUpdate,
   }: AnalyzeParams): Promise<AnalysisWithDiagnosis | null> => {
     setError(null);
     setIsRunning(true);
     loggerService.info('Inicio de análisis dermatológico', {
       userId,
+      sessionId: consent.sessionId,
+      allowTrainingStorage: consent.allowTrainingStorage,
       confidenceThreshold,
       sizeBytes: imageBlob.size,
     });
@@ -59,34 +90,16 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       formData.append('face_image', imageBlob, 'capture.jpg');
       formData.append('user_id', userId);
       formData.append('conf', confidenceThreshold.toString());
+      appendConsentFields(formData, consent);
       if (expressionLinesConf !== undefined) {
         formData.append('expression_lines_conf', expressionLinesConf.toString());
       }
 
-      const response = await loggedFetch(apiUrl('/api/v1/analysis/face-analyze-total'), {
-        method: 'POST',
-        body: formData,
-        operationName: 'face_analyze_total',
-      });
-
-      if (!response.ok) {
-        const message = await parseApiErrorMessage(response);
-        setError(message);
-        loggerService.warn('Análisis dermatológico retornó error HTTP', {
-          userId,
-          message,
-          status: response.status,
-        });
-        return null;
-      }
-
-      const raw = await response.json();
-      const payload: AnalysisWithDiagnosis = isCombinedFacialAnalysisResponse(raw)
-        ? mapCombinedFacialAnalysis(raw)
-        : (raw as AnalysisWithDiagnosis);
+      const payload = await runAnalysisJob(formData, onQueueUpdate);
 
       loggerService.info('Análisis facial combinado finalizado', {
         userId,
+        sessionId: consent.sessionId,
         totalDetections: payload.analysis.total_detections,
         expressionLinesDetected: payload.expression_lines?.detected ?? false,
         processingTimeMs: payload.analysis.processing_time_ms,
@@ -97,6 +110,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       setError(message);
       loggerService.error('Fallo de red o ejecución en análisis dermatológico', {
         userId,
+        sessionId: consent.sessionId,
         message,
       });
       return null;
@@ -109,12 +123,16 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     imageBlob1,
     imageBlob2,
     userId,
+    consent,
     confidenceThreshold = 0.25,
+    onQueueUpdate,
   }: AnalyzeDoubleParams): Promise<AnalysisWithDiagnosis | null> => {
     setError(null);
     setIsRunning(true);
     loggerService.info('Inicio de análisis dermatológico doble', {
       userId,
+      sessionId: consent.sessionId,
+      allowTrainingStorage: consent.allowTrainingStorage,
       confidenceThreshold,
       sizeBytes1: imageBlob1.size,
       sizeBytes2: imageBlob2.size,
@@ -126,34 +144,13 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       formData.append('face_image_2', imageBlob2, 'capture_2.jpg');
       formData.append('user_id', userId);
       formData.append('conf', confidenceThreshold.toString());
+      appendConsentFields(formData, consent);
 
-      const response = await loggedFetch(
-        apiUrl('/api/v1/analysis/face-analyze-total-double'),
-        {
-          method: 'POST',
-          body: formData,
-          operationName: 'face_analyze_total_double',
-        },
-      );
-
-      if (!response.ok) {
-        const message = await parseApiErrorMessage(response);
-        setError(message);
-        loggerService.warn('Análisis dermatológico doble retornó error HTTP', {
-          userId,
-          message,
-          status: response.status,
-        });
-        return null;
-      }
-
-      const raw = await response.json();
-      const payload: AnalysisWithDiagnosis = isCombinedFacialAnalysisResponse(raw)
-        ? mapCombinedFacialAnalysis(raw)
-        : (raw as AnalysisWithDiagnosis);
+      const payload = await runAnalysisJob(formData, onQueueUpdate);
 
       loggerService.info('Análisis facial doble finalizado', {
         userId,
+        sessionId: consent.sessionId,
         totalDetections: payload.analysis.total_detections,
         imagesProcessed: payload.images_processed ?? 2,
         processingTimeMs: payload.analysis.processing_time_ms,
@@ -164,6 +161,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       setError(message);
       loggerService.error('Fallo de red o ejecución en análisis dermatológico doble', {
         userId,
+        sessionId: consent.sessionId,
         message,
       });
       return null;
@@ -178,5 +176,30 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     analyzeFaceImage,
     analyzeFaceImagesDouble,
     clearError,
+  };
+}
+
+export function buildAnalysisConsentPayload(consent: {
+  consentAnalysisAccepted: boolean;
+  privacyPolicyAccepted: boolean;
+  allowTrainingStorage: boolean;
+  legalVersion: string | null;
+  sessionId: string | null;
+}): AnalysisConsentPayload | null {
+  if (
+    !consent.consentAnalysisAccepted
+    || !consent.privacyPolicyAccepted
+    || !consent.sessionId
+    || !consent.legalVersion
+  ) {
+    return null;
+  }
+
+  return {
+    consentAccepted: true,
+    privacyAccepted: true,
+    allowTrainingStorage: consent.allowTrainingStorage,
+    legalVersion: consent.legalVersion,
+    sessionId: consent.sessionId,
   };
 }

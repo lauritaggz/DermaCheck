@@ -1,6 +1,4 @@
 import type { ExpressionLinesResult } from '../types';
-import { getConfidenceLevel } from '../utils/severityColors';
-import { ConfidenceBadge } from './ui/SeverityBadge';
 
 interface Props {
   expressionLines: ExpressionLinesResult;
@@ -8,9 +6,6 @@ interface Props {
 }
 
 export function ExpressionLinesFindingCard({ expressionLines, cardIndex }: Props) {
-  const confidencePercent = Math.round(expressionLines.average_confidence * 100);
-  const confidenceLevel = getConfidenceLevel(expressionLines.average_confidence);
-
   return (
     <article className="surface-card surface-card-hover border-l-4 border-l-violet-500">
       <div className="p-5">
@@ -21,17 +16,15 @@ export function ExpressionLinesFindingCard({ expressionLines, cardIndex }: Props
                 {cardIndex}
               </span>
               <h3 className="font-bold text-lg text-brand-900">Líneas de expresión</h3>
-              <ConfidenceBadge level={confidenceLevel} />
             </div>
             <p className="text-sm text-textSecondary">
               Zonas asociadas a líneas de expresión detectadas en la imagen.
             </p>
           </div>
-          <div className="bg-violet-50 rounded-xl p-4 min-w-[110px] text-center border border-violet-100">
-            <div className="text-3xl font-bold text-violet-700">{confidencePercent}%</div>
-            <p className="text-xs font-semibold text-textMuted normal-case">Confianza</p>
-            <p className="text-xs text-textSecondary mt-1">
-              {expressionLines.count} detección{expressionLines.count !== 1 ? 'es' : ''}
+          <div className="bg-violet-50 rounded-xl px-4 py-3 min-w-[110px] text-center border border-violet-100">
+            <p className="text-2xl font-bold text-violet-700 leading-none">{expressionLines.count}</p>
+            <p className="text-xs font-semibold text-textMuted normal-case mt-1">
+              detección{expressionLines.count !== 1 ? 'es' : ''}
             </p>
           </div>
         </div>

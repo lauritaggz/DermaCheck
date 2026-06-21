@@ -120,24 +120,6 @@
     animation: scanSweep 2.5s ease-in-out infinite;
   }
 
-  /* Anillo de confianza */
-  .confidence-ring {
-    background: conic-gradient(
-      #14B8A6 var(--confidence-deg, 0deg),
-      #E2E8F0 var(--confidence-deg, 0deg)
-    );
-    border-radius: 50%;
-    padding: 3px;
-  }
-
-  .confidence-ring-inner {
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
   /* Botón principal con brillo */
   .btn-primary-glow {
     background: linear-gradient(135deg, #1B5E96 0%, #0D9488 100%);

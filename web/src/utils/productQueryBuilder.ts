@@ -98,10 +98,30 @@ function productTypeToScraperQuery(productType: string): string {
 
 /**
  * Construye queries desde ingredientes y tipos de producto del catálogo.
+ * Con varias afecciones, prioriza al menos una búsqueda por hallazgo.
  */
 export function buildProductQueriesFromRecommendations(
   recommendations: Recommendation[],
 ): string[] {
+  if (recommendations.length > 1) {
+    const perConditionQueries: string[] = [];
+
+    for (const rec of recommendations) {
+      const ingredients = collectUniqueIngredients([rec]);
+      if (ingredients[0]) {
+        perConditionQueries.push(ingredientToScraperQuery(ingredients[0]));
+      }
+      if (ingredients[1] && perConditionQueries.length < MAX_QUERIES) {
+        perConditionQueries.push(ingredientToScraperQuery(ingredients[1]));
+      }
+    }
+
+    const deduped = dedupeQueries(perConditionQueries);
+    if (deduped.length > 0) {
+      return deduped.slice(0, MAX_QUERIES);
+    }
+  }
+
   const ingredientQueries = collectUniqueIngredients(recommendations).map(
     ingredientToScraperQuery,
   );

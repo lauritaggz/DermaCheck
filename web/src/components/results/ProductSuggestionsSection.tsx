@@ -8,6 +8,7 @@ interface Props {
   error?: string | null;
   queriesUsed?: string[];
   warning?: string | null;
+  multipleConditions?: boolean;
 }
 
 export function ProductSuggestionsSection({
@@ -16,13 +17,16 @@ export function ProductSuggestionsSection({
   error = null,
   queriesUsed = [],
   warning = null,
+  multipleConditions = false,
 }: Props) {
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-bold text-brand-900">Productos sugeridos</h2>
         <p className="text-sm text-textSecondary">
-          Productos relacionados con tus recomendaciones — orientación cosmética, no prescripción médica
+          {multipleConditions
+            ? 'Búsqueda por componentes de cada hallazgo · Hasta 3 productos · Orientación cosmética'
+            : 'Productos relacionados con tus recomendaciones — orientación cosmética, no prescripción médica'}
         </p>
       </div>
 
@@ -67,7 +71,7 @@ export function ProductSuggestionsSection({
             No se encontraron productos relacionados con las recomendaciones actuales.
           </p>
           <p className="text-sm text-textSecondary max-w-sm mx-auto">
-            Puedes revisar las recomendaciones anteriores como orientación general de cuidado.
+            Solo mostramos productos que incluyan componentes de tus recomendaciones. Puedes revisar la rutina sugerida como orientación general.
           </p>
         </div>
       )}

@@ -136,5 +136,22 @@ class SkinAnalysis(Base):
     user: Mapped[AppUser] = relationship(back_populates="analyses")
 
 
+class TrainingImageRecord(Base):
+    """Imagen facial conservada con consentimiento opcional de entrenamiento (tótem)."""
+
+    __tablename__ = "training_image_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    legal_version: Mapped[str] = mapped_column(String(32))
+    consent_accepted: Mapped[bool] = mapped_column(Boolean(), default=True)
+    privacy_accepted: Mapped[bool] = mapped_column(Boolean(), default=True)
+    allow_training_storage: Mapped[bool] = mapped_column(Boolean(), default=True)
+    image_path: Mapped[str] = mapped_column(String(512))
+    detected_conditions_json: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    source: Mapped[str] = mapped_column(String(32), default="totem")
+
+
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
