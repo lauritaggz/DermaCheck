@@ -7,8 +7,14 @@
 # Salud: http://SERVIDOR:${API_HOST_PORT}/health
 # El contexto de build es ../../backend relativo a este archivo → carpeta backend del repo.
 # Datos persistentes (MySQL + subidas de imágenes): ./data/ respecto a deploy/production/
+#   - data/mysql/     → base de datos
+#   - data/uploads/   → capturas públicas (static/uploads)
+#   - data/storage/   → training_images (consentimiento) + job_queue temporal
 
 name: dermacheck_prod
+
+x-timezone: &timezone
+  TZ: ${TZ:-America/Santiago}
 
 services:
   db:
@@ -16,6 +22,7 @@ services:
     container_name: dermacheck_db_prod
     restart: always
     environment:
+      <<: *timezone
       MYSQL_DATABASE: ${MYSQL_DATABASE:?definir en .env}
       MYSQL_USER: ${MYSQL_USER:?definir en .env}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?definir en .env}
@@ -38,12 +45,25 @@ services:
     container_name: dermacheck_api_prod
     restart: always
     environment:
+      <<: *timezone
       DATABASE_URL: ${DATABASE_URL:?definir en .env}
       MODEL_PATH: ml_models/best.pt
       UPLOAD_DIR: static/uploads
       CORS_ORIGINS: http://localhost:3005,http://localhost:3000,${FRONTEND_NETLIFY_URL:-}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-resend}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-DermaCheck <no-reply@dermacheck.cl>}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      EMAIL_RATE_LIMIT_PER_MINUTE: ${EMAIL_RATE_LIMIT_PER_MINUTE:-5}
+      # Cola de análisis (in-memory; mantener 1 proceso — no gunicorn multi-worker sin Redis)
+      ANALYSIS_QUEUE_MAX_SIZE: ${ANALYSIS_QUEUE_MAX_SIZE:-10}
+      ANALYSIS_MAX_CONCURRENT: ${ANALYSIS_MAX_CONCURRENT:-1}
+      ANALYSIS_JOB_TTL_SECONDS: ${ANALYSIS_JOB_TTL_SECONDS:-3600}
+      ANALYSIS_JOB_POLL_INTERVAL_HINT: ${ANALYSIS_JOB_POLL_INTERVAL_HINT:-1.5}
     volumes:
       - ./data/uploads:/app/static/uploads
+      - ./data/storage:/app/storage
       - ../../backend/ml_models:/app/ml_models:ro
     deploy:
       resources:

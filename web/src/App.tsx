@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider, useAppState } from './context/AppContext';
+import { isConsentComplete } from './utils/consentHelpers';
 
 // Eager loading para pantallas críticas
 import { WelcomeScreen } from './screens/WelcomeScreen';
@@ -17,6 +18,7 @@ const CameraScreen = lazy(() => import('./screens/CameraScreen').then(m => ({ de
 const PreviewScreen = lazy(() => import('./screens/PreviewScreen').then(m => ({ default: m.PreviewScreen })));
 const ProcessingScreen = lazy(() => import('./screens/ProcessingScreen').then(m => ({ default: m.ProcessingScreen })));
 const ResultsScreen = lazy(() => import('./screens/ResultsScreen').then(m => ({ default: m.ResultsScreen })));
+const ScraperTestScreen = lazy(() => import('./screens/ScraperTestScreen').then(m => ({ default: m.ScraperTestScreen })));
 
 function LoadingFallback() {
   return (
@@ -26,9 +28,15 @@ function LoadingFallback() {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAppState();
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
+/** Flujo tótem: requiere consentimiento, no login. */
+function ConsentRequiredRoute({ children }: { children: React.ReactNode }) {
+  const { consent } = useAppState();
+  return isConsentComplete(consent) ? <>{children}</> : <Navigate to="/consent" replace />;
+}
+
+function ConsentPendingRoute({ children }: { children: React.ReactNode }) {
+  const { consent } = useAppState();
+  return isConsentComplete(consent) ? <Navigate to="/instructions" replace /> : <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -45,18 +53,19 @@ function AnimatedRoutes() {
         <Route path="/" element={<WelcomeScreen />} />
         <Route path="/login" element={<PublicRoute><LoginScreen /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><RegisterScreen /></PublicRoute>} />
-        <Route path="/consent" element={<ProtectedRoute><ConsentScreen /></ProtectedRoute>} />
-        <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
-        <Route path="/instructions" element={<ProtectedRoute><InstructionsScreen /></ProtectedRoute>} />
-        <Route path="/image-picker" element={<ProtectedRoute
-        ><ImagePickerScreen /></ProtectedRoute>} />
-        <Route path="/quality-scan" element={<ProtectedRoute><CameraScreen /></ProtectedRoute>} />
+        <Route path="/consent" element={<ConsentPendingRoute><ConsentScreen /></ConsentPendingRoute>} />
+        <Route path="/home" element={<ConsentRequiredRoute><HomeScreen /></ConsentRequiredRoute>} />
+        <Route path="/instructions" element={<ConsentRequiredRoute><InstructionsScreen /></ConsentRequiredRoute>} />
+        <Route path="/image-picker" element={<ConsentRequiredRoute><ImagePickerScreen /></ConsentRequiredRoute>} />
+        <Route path="/quality-scan" element={<ConsentRequiredRoute><CameraScreen /></ConsentRequiredRoute>} />
         <Route path="/camera" element={<Navigate to="/quality-scan" replace />} />
-        <Route path="/preview" element={<ProtectedRoute><PreviewScreen /></ProtectedRoute>} />
-        <Route path="/analysis/conditions" element={<ProtectedRoute><ProcessingScreen /></ProtectedRoute>} />
-        <Route path="/analysis/results" element={<ProtectedRoute><ResultsScreen /></ProtectedRoute>} />
+        <Route path="/preview" element={<ConsentRequiredRoute><PreviewScreen /></ConsentRequiredRoute>} />
+        <Route path="/analysis/conditions" element={<ConsentRequiredRoute><ProcessingScreen /></ConsentRequiredRoute>} />
+        <Route path="/analysis/results" element={<ConsentRequiredRoute><ResultsScreen /></ConsentRequiredRoute>} />
         <Route path="/processing" element={<Navigate to="/analysis/conditions" replace />} />
         <Route path="/results" element={<Navigate to="/analysis/results" replace />} />
+        {/* HU22: página aislada de prueba del scraper; no enlazada al menú principal */}
+        <Route path="/scraper-test" element={<ScraperTestScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

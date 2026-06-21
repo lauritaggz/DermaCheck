@@ -5,61 +5,33 @@ interface Props {
   cardIndex: number;
 }
 
-const CARD_COLOR = 'bg-purple-50 border-purple-200 text-purple-800';
-const BAR_GRADIENT = 'from-purple-500 to-purple-600';
-
-/**
- * Tarjeta de hallazgo visual para líneas de expresión (sin recomendaciones de producto).
- */
 export function ExpressionLinesFindingCard({ expressionLines, cardIndex }: Props) {
-  const confidencePercent = Math.round(expressionLines.average_confidence * 100);
-
   return (
-    <div className="group hover:scale-[1.01] transition-transform duration-200">
-      <div
-        className={`relative overflow-hidden rounded-2xl border-2 shadow-md hover:shadow-lg transition-shadow ${CARD_COLOR}`}
-      >
-        <div className="flex items-stretch">
-          <div
-            className={`w-16 bg-gradient-to-b ${BAR_GRADIENT} flex items-center justify-center flex-shrink-0`}
-          >
-            <span className="text-3xl font-bold text-white">{cardIndex}</span>
+    <article className="surface-card surface-card-hover border-l-4 border-l-violet-500">
+      <div className="p-5">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 text-white text-sm font-bold flex items-center justify-center">
+                {cardIndex}
+              </span>
+              <h3 className="font-bold text-lg text-brand-900">Líneas de expresión</h3>
+            </div>
+            <p className="text-sm text-textSecondary">
+              Zonas asociadas a líneas de expresión detectadas en la imagen.
+            </p>
           </div>
-
-          <div className="flex-1 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="font-bold text-xl mb-2">Líneas de expresión detectadas</h3>
-                <p className="text-sm leading-relaxed opacity-90">
-                  Se detectaron zonas asociadas a líneas de expresión en la imagen analizada.
-                </p>
-              </div>
-
-              <div className="flex-shrink-0 text-right bg-white/50 rounded-xl p-4 min-w-[140px]">
-                <div className="text-4xl font-bold leading-none mb-1">{confidencePercent}%</div>
-                <p className="text-xs font-semibold uppercase tracking-wide opacity-75 mb-2">
-                  Confianza promedio
-                </p>
-                <div className="pt-2 border-t border-current/20">
-                  <p className="text-sm font-medium">
-                    {expressionLines.count} detección{expressionLines.count !== 1 ? 'es' : ''}{' '}
-                    aprox.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t-2 border-current/20">
-              <p className="text-xs leading-relaxed opacity-90">
-                <span className="font-semibold">Nota: </span>
-                Este resultado se muestra solo como hallazgo visual preliminar. Las
-                recomendaciones específicas para líneas de expresión serán incorporadas en una
-                próxima etapa.
-              </p>
-            </div>
+          <div className="bg-violet-50 rounded-xl px-4 py-3 min-w-[110px] text-center border border-violet-100">
+            <p className="text-2xl font-bold text-violet-700 leading-none">{expressionLines.count}</p>
+            <p className="text-xs font-semibold text-textMuted normal-case mt-1">
+              detección{expressionLines.count !== 1 ? 'es' : ''}
+            </p>
           </div>
         </div>
+        <p className="mt-4 text-xs text-textMuted border-t border-slate-100 pt-3">
+          Hallazgo visual preliminar. Recomendaciones específicas en próxima etapa.
+        </p>
       </div>
-    </div>
+    </article>
   );
 }

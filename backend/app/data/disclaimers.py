@@ -1,114 +1,126 @@
 """
-Disclaimers y mensajes médicos legales para el sistema de análisis.
-
-Estos mensajes son críticos desde el punto de vista legal y de seguridad del paciente.
-Cualquier cambio debe ser revisado por el equipo legal y médico.
+Disclaimers médicos y mensajes de seguridad para DermaCheck.
 """
 
 from __future__ import annotations
 
+MEDICAL_DISCLAIMER_MAIN = (
+    "DermaCheck entrega orientación educativa y recomendaciones generales de cuidado de la piel. "
+    "No reemplaza la evaluación de un dermatólogo ni constituye diagnóstico médico. "
+    "Las recomendaciones se basan en referencias dermatológicas verificables (p. ej. DermNet). "
+    "Ante dudas, síntomas persistentes o signos de alarma, consulte a un profesional de salud."
+)
 
-# Disclaimer principal - siempre visible
-MEDICAL_DISCLAIMER_MAIN = """
-**IMPORTANTE: Este es un análisis preliminar automatizado**
+MEDICAL_DISCLAIMER_SHORT = (
+    "Orientación educativa basada en fuentes dermatológicas. No es diagnóstico médico."
+)
 
-Este resultado NO constituye un diagnóstico médico definitivo. Es una herramienta de orientación 
-cosmética basada en inteligencia artificial que identifica características visuales en la piel.
+REQUIRES_EVALUATION_MESSAGE = (
+    "Se recomienda evaluación dermatológica presencial por los hallazgos detectados."
+)
 
-Para cualquier condición persistente, dolorosa, preocupante o que interfiera con su calidad de vida, 
-consulte presencialmente con un dermatólogo certificado.
-"""
+GENERAL_SKINCARE_TIPS = [
+    "Limpieza facial suave, sin frotar en exceso ni usar productos abrasivos.",
+    "Hidratación diaria acorde al tipo de piel para apoyar la barrera cutánea.",
+    "Fotoprotección de amplio espectro todos los días, incluso en interiores cerca de ventanas.",
+    "Evitar manipular lesiones, apretar comedones o usar demasiados activos a la vez.",
+    "Consultar a un dermatólogo si los síntomas persisten, empeoran o generan molestia importante.",
+]
 
-# Disclaimer corto para espacios reducidos
-MEDICAL_DISCLAIMER_SHORT = """
-Resultado preliminar. No reemplaza consulta médica profesional.
-"""
-
-# Mensaje para casos que requieren evaluación
-REQUIRES_EVALUATION_MESSAGE = """
-⚠️ **Se recomienda evaluación médica presencial**
-
-Basándonos en las características detectadas, recomendamos que consulte con un dermatólogo 
-para una evaluación completa y personalizada.
-"""
-
-# Mensajes por severidad
-SEVERITY_MESSAGES = {
+SEVERITY_MESSAGES: dict[str, dict[str, str]] = {
     "ninguna": {
-        "titulo": "Estado Saludable",
-        "mensaje": "No se detectaron afecciones significativas en el análisis.",
-        "consejo": "Mantén tu rutina de cuidado básica: limpieza, hidratación y protección solar.",
+        "titulo": "Piel sin hallazgos significativos",
+        "mensaje": (
+            "No se detectaron afecciones relevantes. Mantenga cuidado general "
+            "y observe cambios en la piel con el tiempo."
+        ),
+        "consejo": "Continúe con limpieza suave, hidratación y fotoprotección diaria.",
     },
     "leve": {
-        "titulo": "Afecciones Leves Detectadas",
-        "mensaje": "Se identificaron condiciones menores que pueden mejorar con cuidados cosméticos básicos.",
-        "consejo": "Sigue las recomendaciones específicas para cada condición y mantén una rutina consistente.",
+        "titulo": "Hallazgos leves",
+        "mensaje": (
+            "Los hallazgos sugieren cuidado general de la piel y observación. "
+            "Mantenga una rutina suave y consulte si los síntomas persisten o empeoran."
+        ),
+        "consejo": "Priorice limpieza suave, hidratación adecuada y protector solar diario.",
     },
     "moderada": {
-        "titulo": "Afecciones Moderadas Detectadas",
-        "mensaje": "Se identificaron condiciones que pueden requerir productos específicos y seguimiento.",
-        "consejo": "Considera consultar con un dermatólogo si no observas mejoría en 4-6 semanas.",
+        "titulo": "Hallazgos moderados",
+        "mensaje": (
+            "Se sugiere cuidado general de la piel con seguimiento cercano. "
+            "Consulte a un dermatólogo si los síntomas persisten, empeoran o generan molestia importante."
+        ),
+        "consejo": "Evite irritantes, no manipule lesiones y considere evaluación profesional si no mejora.",
     },
     "severa": {
-        "titulo": "Múltiples Afecciones Detectadas",
-        "mensaje": "Se identificaron varias condiciones que podrían beneficiarse de evaluación profesional.",
-        "consejo": "Recomendamos consultar con un dermatólogo para un plan de tratamiento personalizado.",
+        "titulo": "Hallazgos que requieren atención",
+        "mensaje": (
+            "Se recomienda evaluación dermatológica presencial. "
+            "Los hallazgos detectados pueden requerir diagnóstico y manejo profesional."
+        ),
+        "consejo": "Agende consulta con dermatólogo para valoración y orientación personalizada.",
     },
 }
 
-# Advertencias generales
-GENERAL_WARNINGS = [
-    "Si experimentas dolor, sangrado, pus o fiebre, busca atención médica inmediata",
-    "Cambios rápidos en manchas o lunares requieren evaluación dermatológica urgente",
-    "Picazón intensa que interfiere con el sueño debe ser evaluada por un profesional",
-    "Lesiones que no cicatrizan en 2-3 semanas requieren consulta médica",
-]
-
-# Consejos generales de cuidado de la piel
-GENERAL_SKINCARE_TIPS = [
-    "Usar protector solar SPF 50+ diariamente, incluso en días nublados",
-    "Mantener una rutina constante: limpieza, hidratación y protección",
-    "Dormir 7-8 horas y mantener una dieta balanceada rica en antioxidantes",
-    "Evitar tocar el rostro con las manos sin lavar",
-    "Limpiar el celular regularmente ya que entra en contacto con el rostro",
-    "Cambiar la funda de almohada semanalmente",
-]
-
-# Mensaje de limitaciones del sistema
-SYSTEM_LIMITATIONS = """
-**Limitaciones del análisis automatizado:**
-
-- El sistema analiza únicamente características visibles en fotografías
-- No detecta condiciones internas, sistémicas o no visibles
-- La precisión puede verse afectada por iluminación, calidad de imagen o ángulo
-- Ciertas condiciones dermatológicas requieren pruebas de laboratorio para diagnóstico
-- El análisis es un punto de partida, no un diagnóstico definitivo
-"""
-
-# Mensaje de privacidad
-PRIVACY_MESSAGE = """
-Tu imagen se procesa de forma segura en nuestros servidores y no se comparte con terceros. 
-Puedes eliminar tus análisis en cualquier momento desde tu perfil.
-"""
-
-# Contacto de emergencia (personalizable por región)
-EMERGENCY_CONTACT_INFO = """
-**¿Cuándo buscar atención médica urgente?**
-
-- Lesiones que sangran sin causa aparente
-- Hinchazón severa del rostro
-- Dificultad para respirar (podría ser alergia severa)
-- Dolor facial intenso acompañado de fiebre
-
-En caso de emergencia médica, contactar servicios de urgencia locales.
-"""
+ALERT_TRIGGERS: dict[str, str] = {
+    "severidad_alta": (
+        "Se detectó severidad alta en al menos una afección. "
+        "Se recomienda evaluación dermatológica."
+    ),
+    "multiples_condiciones": (
+        "Se detectaron múltiples afecciones simultáneamente. "
+        "Un dermatólogo puede orientar el manejo integral."
+    ),
+    "dolor": "Consulte de inmediato si hay dolor persistente en las lesiones.",
+    "sangrado": "Consulte de inmediato si hay sangrado en lesiones cutáneas.",
+    "heridas": "Las heridas abiertas o costras extensas requieren evaluación médica.",
+    "secrecion": "La secreción o supuración puede indicar infección; consulte a un profesional.",
+    "costras": "Costras extensas o persistentes requieren evaluación dermatológica.",
+    "inflamacion_intensa": (
+        "La inflamación intensa o enrojecimiento marcado requiere evaluación profesional."
+    ),
+    "cambios_rapidos": (
+        "Los cambios rápidos en tamaño, forma o color de lesiones requieren evaluación presencial."
+    ),
+    "compromiso_ocular": (
+        "Si hay síntomas oculares (ojos rojos, irritados, visión borrosa), consulte de inmediato."
+    ),
+    "manchas_sospechosas": (
+        "Algunas lesiones pigmentadas con cambios sospechosos requieren evaluación dermatológica "
+        "presencial para descartar condiciones que no pueden evaluarse solo con imagen."
+    ),
+}
 
 
-def get_disclaimer_by_severity(severidad: str) -> dict[str, str]:
-    """Retorna el mensaje apropiado según la severidad."""
-    return SEVERITY_MESSAGES.get(severidad, SEVERITY_MESSAGES["leve"])
+def get_disclaimer_by_severity(severity: str) -> dict[str, str]:
+    """Retorna mensaje contextual según severidad (ninguna, leve, moderada, severa)."""
+    return SEVERITY_MESSAGES.get(severity.lower(), SEVERITY_MESSAGES["leve"])
 
 
-def get_full_disclaimer() -> str:
-    """Retorna el disclaimer completo para documentos o reportes."""
-    return f"{MEDICAL_DISCLAIMER_MAIN}\n\n{SYSTEM_LIMITATIONS}\n\n{PRIVACY_MESSAGE}"
+def get_alert_message(trigger: str) -> str | None:
+    """Retorna mensaje de alerta para un trigger específico."""
+    return ALERT_TRIGGERS.get(trigger)
+
+
+def collect_contextual_alerts(
+    severidad: str,
+    cantidad_condiciones: int,
+    requiere_evaluacion: bool,
+) -> list[str]:
+    """Genera alertas adicionales según severidad y contexto del análisis."""
+    alerts: list[str] = []
+
+    if severidad == "severa":
+        msg = get_alert_message("severidad_alta")
+        if msg:
+            alerts.append(msg)
+
+    if cantidad_condiciones >= 2:
+        msg = get_alert_message("multiples_condiciones")
+        if msg:
+            alerts.append(msg)
+
+    if requiere_evaluacion and severidad != "severa":
+        alerts.append(REQUIRES_EVALUATION_MESSAGE)
+
+    return alerts

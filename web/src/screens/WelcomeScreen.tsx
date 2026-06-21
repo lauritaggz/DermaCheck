@@ -1,136 +1,537 @@
 import { useNavigate } from 'react-router-dom';
-import { PrimaryButton, ScreenContainer } from '../components';
+import { motion } from 'framer-motion';
 import { PageTransition } from '../components/PageTransition';
-import { ScanIcon, SparklesIcon, ShieldIcon, DocumentIcon } from '../components/Icons';
+import { AppShell } from '../components/layout/AppShell';
+import { BrandLogo } from '../components/layout/BrandLogo';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { DisclaimerBanner } from '../components/results/DisclaimerBanner';
+import { useAppState } from '../context/AppContext';
+import {
+  CameraIcon,
+  ChartIcon,
+  CheckCircleIcon,
+  DocumentIcon,
+  GridIcon,
+  ScanIcon,
+  ShieldIcon,
+  SparklesIcon,
+  TargetIcon,
+  ZapIcon,
+} from '../components/Icons';
 
-export function WelcomeScreen() {
-  const navigate = useNavigate();
+/* ─── Datos de contenido ─── */
 
+const BUSINESS_BENEFITS = [
+  {
+    icon: SparklesIcon,
+    title: 'Mejora la experiencia del cliente',
+    desc: 'Ofrece una atención moderna e interactiva desde el primer contacto en tu local.',
+    color: 'from-blue-500 to-brand-500',
+  },
+  {
+    icon: ShieldIcon,
+    title: 'Aumenta la confianza antes de comprar',
+    desc: 'El cliente recibe orientación visual antes de elegir un producto o tratamiento.',
+    color: 'from-teal-500 to-teal-600',
+  },
+  {
+    icon: ChartIcon,
+    title: 'Orienta la venta dermocosmética',
+    desc: 'Conecta el análisis con productos de tu catálogo para facilitar la recomendación.',
+    color: 'from-amber-400 to-amber-500',
+  },
+  {
+    icon: TargetIcon,
+    title: 'Te diferencia de la competencia',
+    desc: 'Posiciona tu centro como referente en tecnología aplicada al cuidado de la piel.',
+    color: 'from-emerald-500 to-emerald-600',
+  },
+  {
+    icon: ZapIcon,
+    title: 'Digitaliza la atención inicial',
+    desc: 'Automatiza la orientación preliminar sin reemplazar la valoración profesional.',
+    color: 'from-indigo-500 to-accent',
+  },
+  {
+    icon: DocumentIcon,
+    title: 'Recomendaciones consistentes',
+    desc: 'Entrega criterios uniformes de cuidado basados en hallazgos visibles detectados.',
+    color: 'from-brand-500 to-brand-600',
+  },
+];
+
+const USER_BENEFITS = [
+  'Recibe orientación rápida sobre el estado visible de su piel.',
+  'Entiende mejor qué tipo de cuidado puede necesitar.',
+  'Obtiene recomendaciones generales claras y comprensibles.',
+  'Conoce productos relacionados disponibles en la tienda.',
+  'Vive una experiencia moderna, guiada y sin fricción.',
+];
+
+const TOTEM_FEATURES = [
+  { icon: GridIcon, label: 'Tótem o tablet en recepción o sala de ventas' },
+  { icon: CameraIcon, label: 'Captura facial guiada paso a paso' },
+  { icon: ScanIcon, label: 'Análisis preliminar mediante IA' },
+  { icon: ChartIcon, label: 'Resultados visuales simples y comprensibles' },
+  { icon: DocumentIcon, label: 'Recomendaciones generales de cuidado' },
+  { icon: TargetIcon, label: 'Sugerencias desde tu catálogo asociado' },
+];
+
+const HOW_IT_WORKS = [
+  { step: 1, title: 'Fotografía guiada', desc: 'El usuario se toma una foto siguiendo instrucciones claras en pantalla.', icon: CameraIcon },
+  { step: 2, title: 'Análisis con IA', desc: 'El sistema evalúa condiciones visibles de la piel de forma preliminar.', icon: ScanIcon },
+  { step: 3, title: 'Resultados simples', desc: 'Se muestran hallazgos de forma visual, comprensible y no técnica.', icon: ChartIcon },
+  { step: 4, title: 'Recomendaciones', desc: 'Se entregan consejos generales de cuidado adaptados a los hallazgos.', icon: DocumentIcon },
+  { step: 5, title: 'Productos sugeridos', desc: 'Se sugieren productos disponibles en el catálogo de tu negocio.', icon: TargetIcon },
+];
+
+const fadeUp = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-60px' },
+  transition: { duration: 0.45 },
+};
+
+/* ─── Sub-componentes internos ─── */
+
+function SectionLabel({ children }: { children: string }) {
   return (
-    <PageTransition>
-      <ScreenContainer maxWidth="full" className="bg-gradient-to-br from-surface via-white to-secondary/30">
-        <div className="flex items-center justify-center min-h-screen py-4 sm:py-6 lg:py-8">
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
-              
-              {/* Left Column - Hero & Description */}
-              <div className="text-center lg:text-left space-y-6">
-                {/* Logo & Title */}
-                <div className="inline-flex flex-col lg:flex-row items-center gap-3">
-                  <div className="w-14 h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-primary to-primaryDark rounded-2xl flex items-center justify-center shadow-xl">
-                    <ScanIcon className="w-7 h-7 lg:w-8 lg:h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary via-blue-600 to-primaryDark bg-clip-text text-transparent">
-                      DermaCheck
-                    </h1>
-                    <p className="text-base sm:text-lg text-textSecondary mt-1">
-                      Análisis dermatológico inteligente
-                    </p>
-                  </div>
-                </div>
+    <span className="landing-section-label inline-block text-teal-600 mb-3 normal-case">
+      {children}
+    </span>
+  );
+}
 
-                {/* What is DermaCheck */}
-                <div className="bg-white rounded-2xl p-5 shadow-lg border border-primary/10">
-                  <div className="flex items-start gap-3 text-left">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-text text-base mb-2">¿Qué es DermaCheck?</h3>
-                      <p className="text-textSecondary text-sm leading-relaxed">
-                        <strong className="text-text">DermaCheck</strong> es tu asistente inteligente de cuidado facial. 
-                        Toma una foto de tu rostro y en segundos obtendrás un análisis con IA que identifica 
-                        afecciones como acné, manchas, arrugas o resequedad.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <h2 className="text-2xl sm:text-3xl font-bold text-brand-900 tracking-tight leading-tight">
+      {children}
+    </h2>
+  );
+}
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                  <PrimaryButton
-                    label="Iniciar Sesión"
-                    onClick={() => navigate('/login')}
-                    className="text-base py-3 px-6 shadow-lg hover:shadow-xl"
-                  />
-                  
-                  <PrimaryButton
-                    label="Crear Cuenta"
-                    variant="secondary"
-                    onClick={() => navigate('/register')}
-                    className="text-base py-3 px-6"
-                  />
-                </div>
+function BenefitCard({
+  icon: Icon,
+  title,
+  desc,
+  color,
+  index,
+}: {
+  icon: typeof SparklesIcon;
+  title: string;
+  desc: string;
+  color: string;
+  index: number;
+}) {
+  return (
+    <motion.div
+      {...fadeUp}
+      transition={{ duration: 0.45, delay: index * 0.06 }}
+      className="surface-card p-6 surface-card-hover"
+    >
+      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-soft`}>
+        <Icon className="w-5 h-5 text-white" />
+      </div>
+      <h3 className="font-bold text-brand-900 text-sm sm:text-base mb-2">{title}</h3>
+      <p className="text-sm text-textSecondary leading-relaxed">{desc}</p>
+    </motion.div>
+  );
+}
+
+function TotemMockup() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.3, duration: 0.6 }}
+      className="relative mx-auto w-full max-w-xs sm:max-w-sm"
+    >
+      {/* Pedestal / marco tótem */}
+      <div className="rounded-[2rem] bg-gradient-to-b from-slate-700 to-slate-900 p-3 shadow-elevated">
+        <div className="rounded-[1.5rem] bg-slate-950 p-2">
+          {/* Pantalla */}
+          <div className="relative rounded-2xl overflow-hidden bg-hero-gradient aspect-[3/4]">
+            <div className="absolute inset-0 dot-pattern opacity-30" aria-hidden="true" />
+            {/* Marco facial simulado */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+              <div className="relative w-36 h-44 sm:w-40 sm:h-48 rounded-[50%] border-2 border-white/30 scan-corners">
+                <div className="scan-line-overlay" aria-hidden="true" />
+                <div className="absolute inset-4 rounded-[50%] bg-white/10 backdrop-blur-sm" />
               </div>
-
-              {/* Right Column - Features */}
-              <div className="space-y-5">
-                <div className="bg-gradient-to-br from-primary via-primary to-primaryDark rounded-2xl p-1 shadow-xl">
-                  <div className="bg-white rounded-[18px] p-5">
-                    <h2 className="text-xl lg:text-2xl font-bold text-text mb-4 text-center">
-                      Análisis Facial con IA
-                    </h2>
-                    
-                    <div className="grid gap-4">
-                      <div className="flex items-start gap-3 p-3 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl 
-                                      flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <SparklesIcon className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-text text-sm mb-1">Detección Precisa</h3>
-                          <p className="text-xs text-textSecondary leading-relaxed">
-                            Modelo YOLO entrenado para identificar múltiples afecciones cutáneas
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3 p-3 bg-gradient-to-br from-primary/5 to-white rounded-xl border border-primary/10">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-primaryDark rounded-xl 
-                                      flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <DocumentIcon className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-text text-sm mb-1">Recomendaciones</h3>
-                          <p className="text-xs text-textSecondary leading-relaxed">
-                            Orientación sobre cuidados, ingredientes y productos cosméticos
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3 p-3 bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl 
-                                      flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <ShieldIcon className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-text text-sm mb-1">Privacidad Total</h3>
-                          <p className="text-xs text-textSecondary leading-relaxed">
-                            Tus datos están protegidos y bajo tu control en todo momento
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Disclaimer */}
-                <div className="bg-amber-50 rounded-xl p-4 border border-amber-200/50">
-                  <p className="text-xs text-amber-900 text-center leading-relaxed">
-                    DermaCheck es una herramienta de orientación cosmética basada en IA, 
-                    no constituye diagnóstico médico profesional. Para condiciones persistentes, 
-                    consulta con un dermatólogo certificado.
-                  </p>
-                </div>
+              <p className="mt-5 text-white/90 text-xs font-semibold text-center">
+                Análisis facial en curso…
+              </p>
+              <div className="mt-3 flex gap-2">
+                {['Acné', 'Manchas', 'Rosácea'].map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white/80 backdrop-blur normal-case"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-
             </div>
           </div>
         </div>
-      </ScreenContainer>
+        {/* Base del tótem */}
+        <div className="mx-auto mt-2 w-24 h-3 rounded-full bg-slate-600" />
+      </div>
+      {/* Badge flotante */}
+      <div className="absolute -right-2 top-8 surface-card px-3 py-2 shadow-elevated text-xs font-semibold text-brand-700 hidden sm:block">
+        ✓ Listo en segundos
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Pantalla principal ─── */
+
+export function WelcomeScreen() {
+  const navigate = useNavigate();
+  const { resetKioskSession } = useAppState();
+
+  const startNewAnalysis = () => {
+    resetKioskSession();
+    navigate('/consent');
+  };
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <PageTransition>
+      <AppShell>
+        <div className="min-h-screen flex flex-col landing-text">
+
+          {/* ── Nav ── */}
+          <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+              <BrandLogo size="sm" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => scrollTo('solucion')}
+                  className="hidden sm:inline-flex text-sm font-medium text-textSecondary hover:text-brand-600 transition-colors px-3 py-2"
+                >
+                  Para negocios
+                </button>
+                <button
+                  type="button"
+                  onClick={startNewAnalysis}
+                  className="text-sm font-semibold text-brand-600 hover:text-brand-700 px-3 py-2 transition-colors"
+                >
+                  Comenzar
+                </button>
+                <PrimaryButton
+                  label="Probar análisis"
+                  onClick={startNewAnalysis}
+                  className="!min-h-[40px] !px-4 !text-sm"
+                />
+              </div>
+            </div>
+          </header>
+
+          {/* ── Hero ── */}
+          <section className="bg-hero-gradient text-white relative overflow-hidden">
+            <div className="absolute inset-0 dot-pattern opacity-20" aria-hidden="true" />
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl" aria-hidden="true" />
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 relative">
+              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <span className="inline-flex items-center gap-2 text-sm font-medium normal-case bg-white/15 backdrop-blur px-3 py-1.5 rounded-full mb-6">
+                      <SparklesIcon className="w-3.5 h-3.5" />
+                      Solución tótem · IA · Dermocosmética
+                    </span>
+                    <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-tight tracking-tight">
+                      Análisis facial inteligente para clínicas, centros estéticos y tiendas de dermocosmética
+                    </h1>
+                    <p className="mt-5 text-white/85 text-base sm:text-lg leading-relaxed max-w-xl">
+                      DermaCheck permite ofrecer una experiencia de análisis de piel mediante IA,
+                      entregando orientación visual, recomendaciones generales y sugerencias de
+                      productos desde un catálogo asociado.
+                    </p>
+                    <div className="flex flex-col xs:flex-row gap-3 mt-8">
+                      <button
+                        type="button"
+                        onClick={startNewAnalysis}
+                        className="min-h-[52px] px-8 rounded-xl bg-white text-brand-700 font-semibold shadow-elevated hover:bg-brand-50 transition-all text-sm sm:text-base"
+                      >
+                        Probar análisis
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollTo('solucion')}
+                        className="min-h-[52px] px-8 rounded-xl border-2 border-white/50 text-white font-semibold hover:bg-white/10 transition-all text-sm sm:text-base"
+                      >
+                        Conocer solución para negocios
+                      </button>
+                    </div>
+                    <p className="mt-5 text-sm text-white/60 max-w-md normal-case">
+                      Orientación preliminar con IA · No constituye diagnóstico médico
+                    </p>
+                  </motion.div>
+                </div>
+                <TotemMockup />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Problema ── */}
+          <section className="px-4 sm:px-6 py-16 sm:py-20">
+            <div className="max-w-6xl mx-auto">
+              <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
+                <SectionLabel>El desafío</SectionLabel>
+                <SectionTitle>
+                  Muchas personas eligen productos para la piel sin orientación clara
+                </SectionTitle>
+                <p className="mt-4 text-textSecondary text-base sm:text-lg leading-relaxed">
+                  Esto genera mala elección de productos, baja confianza en la compra y menor
+                  conversión en tienda. Los centros que no ofrecen una experiencia guiada pierden
+                  oportunidades de venta y diferenciación frente a la competencia.
+                </p>
+              </motion.div>
+            </div>
+          </section>
+
+          {/* ── Solución tótem ── */}
+          <section id="solucion" className="px-4 sm:px-6 py-16 sm:py-20 bg-white/60">
+            <div className="max-w-6xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-12 items-start">
+                <motion.div {...fadeUp}>
+                  <SectionLabel>La solución</SectionLabel>
+                  <SectionTitle>
+                    DermaCheck como tótem de análisis facial en punto físico
+                  </SectionTitle>
+                  <p className="mt-4 text-textSecondary leading-relaxed">
+                    Instala DermaCheck en recepción, sala de ventas o mostrador. Tus clientes
+                    obtienen una experiencia moderna de análisis de piel mientras tú conectas
+                    el resultado con productos y servicios de tu negocio.
+                  </p>
+                  <ul className="mt-8 space-y-3">
+                    {TOTEM_FEATURES.map(({ icon: Icon, label }) => (
+                      <li key={label} className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center">
+                          <Icon className="w-4 h-4 text-brand-600" />
+                        </span>
+                        <span className="text-sm text-textSecondary leading-relaxed pt-1">{label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+
+                <motion.div {...fadeUp} transition={{ delay: 0.15 }}>
+                  <div className="surface-card p-6 sm:p-8 border border-teal-100">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-hero-gradient flex items-center justify-center">
+                        <GridIcon className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-brand-900">Ideal para</p>
+                        <p className="text-sm text-textSecondary">Punto de atención físico</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {['Clínicas estéticas', 'Centros dermatológicos', 'Farmacias', 'Tiendas dermocosmética', 'Spas', 'Centros de belleza'].map((seg) => (
+                        <div
+                          key={seg}
+                          className="text-sm font-medium text-brand-800 bg-brand-50 border border-brand-100 rounded-xl px-3 py-2.5 text-center normal-case"
+                        >
+                          {seg}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Beneficios negocio ── */}
+          <section className="px-4 sm:px-6 py-16 sm:py-20">
+            <div className="max-w-6xl mx-auto">
+              <motion.div {...fadeUp} className="text-center mb-10 sm:mb-12">
+                <SectionLabel>Para tu negocio</SectionLabel>
+                <SectionTitle>Beneficios que impulsan ventas y experiencia</SectionTitle>
+              </motion.div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {BUSINESS_BENEFITS.map((b, i) => (
+                  <BenefitCard key={b.title} {...b} index={i} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Beneficios usuario final ── */}
+          <section className="px-4 sm:px-6 py-16 sm:py-20 bg-brand-50/50">
+            <div className="max-w-6xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-10 items-center">
+                <motion.div {...fadeUp}>
+                  <SectionLabel>Para tus clientes</SectionLabel>
+                  <SectionTitle>Una experiencia clara y moderna</SectionTitle>
+                  <p className="mt-4 text-textSecondary leading-relaxed">
+                    El usuario final recibe orientación rápida y comprensible, sin necesidad de
+                    conocimientos técnicos. La experiencia es guiada, visual y pensada para
+                    generar confianza antes de la compra.
+                  </p>
+                </motion.div>
+                <motion.ul {...fadeUp} className="space-y-3">
+                  {USER_BENEFITS.map((item) => (
+                    <li key={item} className="flex items-start gap-3 surface-card px-4 py-3.5">
+                      <CheckCircleIcon className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-textSecondary leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </motion.ul>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Catálogo conectado ── */}
+          <section className="px-4 sm:px-6 py-16 sm:py-20">
+            <div className="max-w-6xl mx-auto">
+              <motion.div
+                {...fadeUp}
+                className="ai-card p-8 sm:p-10 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
+                <div className="relative grid lg:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <SectionLabel>Integración comercial</SectionLabel>
+                    <SectionTitle>Recomendaciones conectadas a tu catálogo</SectionTitle>
+                    <p className="mt-4 text-textSecondary leading-relaxed">
+                      Las recomendaciones pueden vincularse a un catálogo definido por el negocio,
+                      permitiendo sugerir productos disponibles en una sola tienda o proveedor
+                      asociado. Esto facilita una experiencia más coherente para el usuario y una
+                      oportunidad comercial directa para el centro.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      'Catálogo de una farmacia o tienda específica',
+                      'Productos de un proveedor dermocosmético asociado',
+                      'Sin recomendaciones genéricas fuera de tu inventario',
+                      'Conexión directa entre análisis y venta',
+                    ].map((point) => (
+                      <div key={point} className="flex items-center gap-3 bg-white/80 rounded-xl px-4 py-3 border border-teal-100">
+                        <TargetIcon className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span className="text-sm text-brand-800 font-medium">{point}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </section>
+
+          {/* ── Cómo funciona ── */}
+          <section className="px-4 sm:px-6 py-16 sm:py-20 bg-white/60">
+            <div className="max-w-6xl mx-auto">
+              <motion.div {...fadeUp} className="text-center mb-10 sm:mb-14">
+                <SectionLabel>Proceso</SectionLabel>
+                <SectionTitle>¿Cómo funciona?</SectionTitle>
+                <p className="mt-3 text-textSecondary max-w-xl mx-auto">
+                  Cinco pasos simples desde la captura hasta la sugerencia de productos.
+                </p>
+              </motion.div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {HOW_IT_WORKS.map(({ step, title, desc, icon: Icon }, i) => (
+                  <motion.div
+                    key={step}
+                    {...fadeUp}
+                    transition={{ delay: i * 0.08 }}
+                    className="surface-card p-5 text-center relative"
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-full bg-hero-gradient text-white text-sm font-bold flex items-center justify-center mb-4 shadow-soft">
+                      {step}
+                    </div>
+                    <div className="w-9 h-9 mx-auto rounded-lg bg-brand-50 flex items-center justify-center mb-3">
+                      <Icon className="w-4 h-4 text-brand-600" />
+                    </div>
+                    <h3 className="font-bold text-brand-900 text-sm mb-1.5">{title}</h3>
+                    <p className="text-sm text-textSecondary leading-relaxed normal-case">{desc}</p>
+                    {i < HOW_IT_WORKS.length - 1 && (
+                      <span className="hidden lg:block absolute top-1/2 -right-2 w-4 text-brand-200 text-lg" aria-hidden="true">→</span>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Confianza / advertencia ── */}
+          <section className="px-4 sm:px-6 py-12 sm:py-16">
+            <div className="max-w-3xl mx-auto">
+              <DisclaimerBanner
+                variant="warning"
+                title="Información importante"
+                message="DermaCheck no reemplaza una consulta médica dermatológica. Sus resultados son informativos y orientativos. Ante lesiones sospechosas, molestias persistentes o síntomas severos, se recomienda consultar con un profesional de salud."
+              />
+            </div>
+          </section>
+
+          {/* ── CTA final ── */}
+          <section id="demo" className="px-4 sm:px-6 py-16 sm:py-20">
+            <motion.div
+              {...fadeUp}
+              className="max-w-4xl mx-auto bg-hero-gradient rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden"
+            >
+              <div className="absolute inset-0 dot-pattern opacity-20" aria-hidden="true" />
+              <div className="relative">
+                <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
+                  Convierte tu punto de atención en una experiencia inteligente de análisis facial
+                </h2>
+                <p className="mt-4 text-white/80 max-w-xl mx-auto text-sm sm:text-base">
+                  Implementa DermaCheck en tu clínica, farmacia o tienda y ofrece a tus clientes
+                  una experiencia moderna que conecta análisis, orientación y productos.
+                </p>
+                <div className="flex flex-col xs:flex-row gap-3 justify-center mt-8">
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = 'mailto:contacto@dermacheck.cl?subject=Solicitud%20de%20demo%20DermaCheck'}
+                    className="min-h-[52px] px-8 rounded-xl bg-white text-brand-700 font-semibold shadow-elevated hover:bg-brand-50 transition-all text-sm sm:text-base"
+                  >
+                    Solicitar demo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startNewAnalysis}
+                    className="min-h-[52px] px-8 rounded-xl border-2 border-white/50 text-white font-semibold hover:bg-white/10 transition-all text-sm sm:text-base"
+                  >
+                    Probar DermaCheck
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </section>
+
+          {/* ── Footer ── */}
+          <footer className="px-4 sm:px-6 py-8 border-t border-slate-100">
+            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+              <BrandLogo size="sm" />
+              <p className="text-xs text-textMuted max-w-sm normal-case">
+                DermaCheck · Orientación preliminar con IA para el cuidado de la piel.
+                No constituye diagnóstico médico.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="text-sm font-medium text-textSecondary hover:text-brand-600 transition-colors"
+              >
+                Acceso staff
+              </button>
+            </div>
+          </footer>
+
+        </div>
+      </AppShell>
     </PageTransition>
   );
 }

@@ -1,38 +1,48 @@
 """
 Endpoint combinado de análisis facial.
-Recibe una imagen, valida el usuario, guarda el archivo y corre la inferencia IA
-en una sola llamada (lo que normalmente consumirá el frontend).
+Recibe una imagen, valida consentimiento, procesa con IA y decide persistencia según allow_training_storage.
 """
 
 from __future__ import annotations
 
-import json
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
-from app.models import SkinAnalysis
 from app.schemas.combined_analysis import CombinedFacialAnalysisResponse
 from app.schemas.diagnosis import DiagnosisResponse
-from app.services.analysis_combined_service import analyze_face_total
+from app.services.analysis_job_queue import analysis_job_queue
 from app.services.analysis_pipeline_service import build_diagnosis, run_yolo_detections
 from app.services.analysis_validation_service import (
     ensure_user_exists,
     parse_user_id,
-    persist_face_capture,
     read_and_validate_image,
+)
+from app.services.consent_validation_service import validate_analysis_consent_fields
+from app.services.training_image_storage_service import (
+    ephemeral_image_meta,
+    save_training_image,
 )
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
-UPLOAD_ROOT = Path(__file__).resolve().parent.parent.parent / "uploads" / "face_captures"
 ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 MAX_BYTES = 12 * 1024 * 1024
+
+
+def _detected_condition_names(detections) -> list[str]:
+    names: list[str] = []
+    seen: set[str] = set()
+    for detection in detections:
+        label = getattr(detection, "class_name", None) or detection.get("class_name", "")
+        if label and label not in seen:
+            seen.add(label)
+            names.append(label)
+    return names
+
 
 
 @router.post("/face-analyze", response_model=DiagnosisResponse)
@@ -40,72 +50,82 @@ async def analyze_face_image(
     user_id: str = Form(...),
     face_image: UploadFile = File(...),
     conf: float = Form(0.25),
+    consent_accepted: str = Form(...),
+    privacy_accepted: str = Form(...),
+    allow_training_storage: str = Form("false"),
+    legal_version: str = Form(...),
+    session_id: str = Form(...),
     db: Session = Depends(get_db),
 ) -> DiagnosisResponse:
     """
-    Guarda la captura facial del usuario, ejecuta análisis y genera diagnóstico preliminar.
-    
-    Retorna detecciones del modelo + diagnóstico estructurado con información médica.
-    Registra el resultado en la base de datos para histórico (futuro).
+    Guarda la captura solo si allow_training_storage=true; si no, procesamiento efímero.
     """
     start_time = time.perf_counter()
+    consent_ctx = validate_analysis_consent_fields(
+        consent_accepted=consent_accepted,
+        privacy_accepted=privacy_accepted,
+        allow_training_storage=allow_training_storage,
+        legal_version=legal_version,
+        session_id=session_id,
+    )
     n = parse_user_id(user_id)
-
-    # Validar usuario existe
     ensure_user_exists(db, n)
 
-    # Validar formato y tamaño de imagen
     content = await read_and_validate_image(
         face_image,
         allowed_types=ALLOWED_TYPES,
         max_bytes=MAX_BYTES,
     )
 
-    # Guardar imagen
-    filename, rel_path = persist_face_capture(content, n, UPLOAD_ROOT)
+    filename = ""
+    rel_path = ""
+    stored = False
 
-    # Ejecutar inferencia
-    detections = run_yolo_detections(content, conf=conf)
-    
-    # Calcular tiempo de procesamiento
-    processing_time_ms = (time.perf_counter() - start_time) * 1000
-    
-    # **NUEVO: Generar diagnóstico preliminar**
-    diagnosis = build_diagnosis(detections)
+    try:
+        detections = run_yolo_detections(content, conf=conf)
+        processing_time_ms = (time.perf_counter() - start_time) * 1000
+        diagnosis = build_diagnosis(detections)
+        condition_names = _detected_condition_names(detections)
 
-    # Registrar en base de datos
-    analysis_record = SkinAnalysis(
-        user_id=n,
-        image_filename=filename,
-        image_path=rel_path,
-        image_size_bytes=len(content),
-        model_conf_threshold=conf,
-        total_detections=len(detections),
-        detections_json=json.dumps([d.model_dump() for d in detections]),
-        processing_time_ms=processing_time_ms,
-    )
-    db.add(analysis_record)
-    db.commit()
-    db.refresh(analysis_record)
+        # Solo persistir imagen con consentimiento opcional explícito de entrenamiento.
+        if consent_ctx.allow_training_storage:
+            record = save_training_image(
+                content,
+                session_id=consent_ctx.session_id,
+                legal_version=consent_ctx.legal_version,
+                consent_accepted=consent_ctx.consent_accepted,
+                privacy_accepted=consent_ctx.privacy_accepted,
+                detected_conditions=condition_names,
+                db=db,
+            )
+            db.commit()
+            filename = record.image_path.rsplit("/", 1)[-1]
+            rel_path = record.image_path
+            stored = True
+        # Si allow_training_storage=false: content solo en memoria; no se escribe a disco.
 
-    # Construir respuesta estructurada CON DIAGNÓSTICO
-    return DiagnosisResponse(
-        ok=True,
-        user_id=str(n),
-        image={
-            "filename": filename,
-            "path": rel_path,
-            "size_bytes": len(content),
-        },
-        analysis={
-            "model_conf_threshold": conf,
-            "total_detections": len(detections),
-            "detections": [d.model_dump() for d in detections],
-            "processing_time_ms": processing_time_ms,
-        },
-        diagnosis=diagnosis,
-        timestamp=datetime.now(timezone.utc).isoformat(),
-    )
+        image_meta = (
+            {"filename": filename, "path": rel_path, "size_bytes": len(content), "stored": stored}
+            if stored
+            else ephemeral_image_meta(len(content))
+        )
+
+        return DiagnosisResponse(
+            ok=True,
+            user_id=str(n),
+            image=image_meta,
+            analysis={
+                "model_conf_threshold": conf,
+                "total_detections": len(detections),
+                "detections": [d.model_dump() for d in detections],
+                "processing_time_ms": processing_time_ms,
+            },
+            diagnosis=diagnosis,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+    finally:
+        # Sin archivos temporales en disco cuando stored=false (procesamiento en memoria).
+        pass
 
 
 @router.post("/face-analyze-total", response_model=CombinedFacialAnalysisResponse)
@@ -117,13 +137,21 @@ async def analyze_face_image_total(
         default=None,
         description="Opcional; si no se envía, usa app/config.py expression_lines_conf_threshold",
     ),
+    consent_accepted: str = Form(...),
+    privacy_accepted: str = Form(...),
+    allow_training_storage: str = Form("false"),
+    legal_version: str = Form(...),
+    session_id: str = Form(...),
     db: Session = Depends(get_db),
 ) -> CombinedFacialAnalysisResponse:
-    """
-    Análisis facial combinado: afecciones dermatológicas + líneas de expresión.
-    Usa la misma imagen en una sola petición. El endpoint /face-analyze no se modifica.
-    """
-    start_time = time.perf_counter()
+    """Análisis facial combinado con control de persistencia por consentimiento."""
+    consent_ctx = validate_analysis_consent_fields(
+        consent_accepted=consent_accepted,
+        privacy_accepted=privacy_accepted,
+        allow_training_storage=allow_training_storage,
+        legal_version=legal_version,
+        session_id=session_id,
+    )
     n = parse_user_id(user_id)
     ensure_user_exists(db, n)
 
@@ -133,48 +161,74 @@ async def analyze_face_image_total(
         max_bytes=MAX_BYTES,
     )
 
-    filename, rel_path = persist_face_capture(content, n, UPLOAD_ROOT)
-
-    effective_lines_conf = (
-        expression_lines_conf
-        if expression_lines_conf is not None
-        else settings.expression_lines_conf_threshold
-    )
-    combined = analyze_face_total(
-        content,
-        derm_conf=conf,
-        expression_lines_conf=effective_lines_conf,
-    )
-
-    processing_time_ms = (time.perf_counter() - start_time) * 1000
-    combined.payload["affections"]["analysis"]["processing_time_ms"] = processing_time_ms
-
-    analysis_record = SkinAnalysis(
+    result = await analysis_job_queue.run_sync(
         user_id=n,
-        image_filename=filename,
-        image_path=rel_path,
-        image_size_bytes=len(content),
-        model_conf_threshold=conf,
-        total_detections=len(combined.detections),
-        detections_json=json.dumps([d.model_dump() for d in combined.detections]),
-        processing_time_ms=processing_time_ms,
+        consent_ctx=consent_ctx,
+        conf=conf,
+        expression_lines_conf=expression_lines_conf,
+        mode="single",
+        image_contents=[content],
     )
-    db.add(analysis_record)
-    db.commit()
+    return CombinedFacialAnalysisResponse.model_validate(result)
 
-    body = combined.payload
-    return CombinedFacialAnalysisResponse(
-        ok=True,
-        user_id=str(n),
-        image={
-            "filename": filename,
-            "path": rel_path,
-            "size_bytes": len(content),
-        },
-        analysis_type=body["analysis_type"],
-        affections=body["affections"],
-        expression_lines=body["expression_lines"],
-        combined_diagnosis=body["combined_diagnosis"],
-        timestamp=datetime.now(timezone.utc).isoformat(),
-        processing_time_ms=processing_time_ms,
+
+@router.post(
+    "/face-analyze-total-double",
+    response_model=CombinedFacialAnalysisResponse,
+)
+async def analyze_face_image_total_double(
+    user_id: str = Form(...),
+    face_image_1: UploadFile = File(...),
+    face_image_2: UploadFile = File(...),
+    conf: float = Form(0.25, description="Umbral de confianza del modelo dermatológico"),
+    consent_accepted: str = Form(...),
+    privacy_accepted: str = Form(...),
+    allow_training_storage: str = Form("false"),
+    legal_version: str = Form(...),
+    session_id: str = Form(...),
+    db: Session = Depends(get_db),
+) -> CombinedFacialAnalysisResponse:
+    """Análisis doble con fusión YOLO; persistencia condicionada al consentimiento opcional."""
+    consent_ctx = validate_analysis_consent_fields(
+        consent_accepted=consent_accepted,
+        privacy_accepted=privacy_accepted,
+        allow_training_storage=allow_training_storage,
+        legal_version=legal_version,
+        session_id=session_id,
     )
+    n = parse_user_id(user_id)
+    ensure_user_exists(db, n)
+
+    try:
+        content_1 = await read_and_validate_image(
+            face_image_1,
+            allowed_types=ALLOWED_TYPES,
+            max_bytes=MAX_BYTES,
+        )
+    except HTTPException as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=f"Error al procesar una de las imágenes enviadas: {exc.detail}",
+        ) from exc
+
+    try:
+        content_2 = await read_and_validate_image(
+            face_image_2,
+            allowed_types=ALLOWED_TYPES,
+            max_bytes=MAX_BYTES,
+        )
+    except HTTPException as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=f"Error al procesar una de las imágenes enviadas: {exc.detail}",
+        ) from exc
+
+    result = await analysis_job_queue.run_sync(
+        user_id=n,
+        consent_ctx=consent_ctx,
+        conf=conf,
+        expression_lines_conf=None,
+        mode="double",
+        image_contents=[content_1, content_2],
+    )
+    return CombinedFacialAnalysisResponse.model_validate(result)

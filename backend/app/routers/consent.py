@@ -4,6 +4,7 @@ HU09: registro de aceptaciones (#115) y consulta (#116).
 La hora de aceptación la fija el servidor (UTC) al persistir, no el cliente.
 """
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,13 +16,44 @@ from app.models import LegalDocument, UserDocumentAcceptance
 from app.schemas import AcceptanceOut, ConsentAcceptIn, ConsentAcceptResponse
 
 router = APIRouter(prefix="/consents", tags=["consents"])
+logger = logging.getLogger("dermacheck.consents")
+
+REQUIRED_SLUGS = {"consent_informed", "privacy_policy"}
+TRAINING_SLUG = "consent_training"
 
 
 @router.post("/accept", response_model=ConsentAcceptResponse)
 def register_acceptances(body: ConsentAcceptIn, db: Session = Depends(get_db)) -> ConsentAcceptResponse:
+    if not body.consent_analysis or not body.consent_privacy:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe aceptar el consentimiento informado y la política de privacidad.",
+        )
+
     now = datetime.now(timezone.utc)
     results: list[AcceptanceOut] = []
-    uid = body.user_id.strip()
+    # Tótem: evidencia anónima por sesión; si no hay session_id, usa user_id.
+    uid = (body.session_id or body.user_id).strip()
+    item_slugs = {item.slug for item in body.items}
+
+    missing_required = REQUIRED_SLUGS - item_slugs
+    if missing_required:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Faltan documentos obligatorios: {', '.join(sorted(missing_required))}",
+        )
+
+    if body.consent_training and TRAINING_SLUG not in item_slugs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Si consent_training es true, debe incluir el documento consent_training.",
+        )
+
+    if not body.consent_training and TRAINING_SLUG in item_slugs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede registrar consent_training sin consent_training=true.",
+        )
 
     for item in body.items:
         doc = db.execute(select(LegalDocument).where(LegalDocument.slug == item.slug)).scalar_one_or_none()
@@ -76,6 +108,20 @@ def register_acceptances(body: ConsentAcceptIn, db: Session = Depends(get_db)) -
         )
 
     db.commit()
+
+    logger.info(
+        "Consentimientos registrados session_id=%s user_id=%s analysis=%s privacy=%s training=%s "
+        "versions=%s/%s/%s",
+        body.session_id,
+        body.user_id,
+        body.consent_analysis,
+        body.consent_privacy,
+        body.consent_training,
+        body.consent_analysis_version,
+        body.privacy_policy_version,
+        body.training_consent_version,
+    )
+
     return ConsentAcceptResponse(acceptances=results)
 
 

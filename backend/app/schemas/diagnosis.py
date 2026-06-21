@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class DetectedCondition(BaseModel):
-    """Condición detectada con información médica (solo diagnóstico, sin tratamiento específico)."""
+    """Condición detectada con información médica educativa (no diagnóstico definitivo)."""
 
     id: str = Field(..., description="ID de la condición (ej: 'acne')")
     label: str = Field(..., description="Nombre de la condición en español")
@@ -18,6 +18,14 @@ class DetectedCondition(BaseModel):
     advertencias: list[str] = Field(default_factory=list, description="Advertencias médicas")
     color_ui: str = Field(..., description="Color para UI (blue, red, amber, green)")
     recomendaciones: list[str] = Field(default_factory=list, description="Recomendaciones de cuidado y seguimiento")
+    criterios_derivacion: list[str] = Field(
+        default_factory=list,
+        description="Signos clínicos que sugieren consulta dermatológica",
+    )
+    fuentes: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Referencias verificables (p. ej. DermNet)",
+    )
     sugiere_consulta_dermatologo: bool = Field(False, description="Sugerir consulta médica específica")
 
 

@@ -17,7 +17,7 @@ from app.data import (
     get_condition,
     get_disclaimer_by_severity,
 )
-from app.data.disclaimers import GENERAL_SKINCARE_TIPS
+from app.data.disclaimers import GENERAL_SKINCARE_TIPS, collect_contextual_alerts, get_alert_message
 from app.schemas.analysis import DetectionBox
 from app.schemas.diagnosis import DetectedCondition, DiagnosisResult
 
@@ -143,10 +143,12 @@ def generate_diagnosis(detections: list[DetectionBox]) -> DiagnosisResult:
             label=condition_data["label_es"],
             confianza_promedio=round(confianza_promedio, 3),
             cantidad_detecciones=len(dets),
-            descripcion=condition_data["descripcion_medica"],  # Descripción médica completa
+            descripcion=condition_data["descripcion_medica"],
             advertencias=condition_data["advertencias"],
             color_ui=condition_data["color_ui"],
             recomendaciones=condition_data["recomendaciones"],
+            criterios_derivacion=condition_data.get("criterios_derivacion", []),
+            fuentes=condition_data.get("fuentes", []),
             sugiere_consulta_dermatologo=sugiere_consulta,
         )
         condiciones.append(condicion)
@@ -166,10 +168,20 @@ def generate_diagnosis(detections: list[DetectionBox]) -> DiagnosisResult:
     # 6. Obtener mensajes contextuales
     mensaje_severidad = get_disclaimer_by_severity(severidad)
     
-    # 7. Advertencias generales si requiere evaluación
-    advertencias = []
-    if requiere_eval:
-        advertencias.append(REQUIRES_EVALUATION_MESSAGE)
+    # 7. Advertencias generales si requiere evaluación o hay alertas contextuales
+    advertencias = collect_contextual_alerts(severidad, len(condiciones), requiere_eval)
+    if requiere_eval and REQUIRES_EVALUATION_MESSAGE not in advertencias:
+        advertencias.insert(0, REQUIRES_EVALUATION_MESSAGE)
+
+    if any(c.id == "manchas" for c in condiciones):
+        manchas_alert = get_alert_message("manchas_sospechosas")
+        if manchas_alert and manchas_alert not in advertencias:
+            advertencias.append(manchas_alert)
+
+    if any(c.id == "rosacea" for c in condiciones):
+        ocular_alert = get_alert_message("compromiso_ocular")
+        if ocular_alert and ocular_alert not in advertencias:
+            advertencias.append(ocular_alert)
     
     # 8. Consejos generales (máximo 3)
     consejos = GENERAL_SKINCARE_TIPS[:3]

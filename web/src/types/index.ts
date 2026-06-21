@@ -7,6 +7,8 @@ export interface DetectedCondition {
   advertencias: string[];
   color_ui: string;
   recomendaciones: string[];
+  criterios_derivacion?: string[];
+  fuentes?: ConditionSource[];
   sugiere_consulta_dermatologo: boolean;
 }
 
@@ -79,6 +81,12 @@ export interface CombinedFacialAnalysisApiResponse {
   combined_diagnosis: CombinedDiagnosis;
   timestamp: string;
   processing_time_ms?: number;
+  images_processed?: number;
+  images?: Array<{
+    filename: string;
+    path: string;
+    size_bytes: number;
+  }>;
 }
 
 // Análisis completo con diagnóstico (face-analyze o normalizado desde face-analyze-total)
@@ -102,6 +110,12 @@ export interface AnalysisWithDiagnosis {
   analysis_type?: string;
   expression_lines?: ExpressionLinesResult;
   combined_diagnosis?: CombinedDiagnosis;
+  images_processed?: number;
+  images?: Array<{
+    filename: string;
+    path: string;
+    size_bytes: number;
+  }>;
 }
 
 export interface User {
@@ -113,16 +127,63 @@ export interface User {
 
 export type RecommendationCategory = 'routine' | 'sun' | 'professional' | 'lifestyle';
 
+export interface ConditionSource {
+  nombre?: string;
+  name?: string;
+  titulo?: string;
+  title?: string;
+  url: string;
+  uso?: string;
+}
+
+export interface SuggestedIngredientDetail {
+  name: string;
+  purpose: string;
+  cautions?: string[];
+}
+
 export interface Recommendation {
   id: string;
   title: string;
-  body: string;
-  category: RecommendationCategory;
+  /** Resumen educativo; reemplaza body en entradas nuevas. */
+  summary?: string;
+  /** Texto legacy para compatibilidad con entradas antiguas. */
+  body?: string;
+  category?: RecommendationCategory;
   relatedConditionKeys?: string[];
-  /** Ingredientes frecuentes en cosmética; solo orientativos, sin marcas. */
-  suggestedIngredients: string[];
-  /** Formatos de producto genéricos sugeridos. */
+  suggestedIngredients: SuggestedIngredientDetail[] | string[];
   suggestedProductTypes: string[];
+  morningRoutine?: string[];
+  nightRoutine?: string[];
+  avoid?: string[];
+  whenToConsult?: string[];
+  sources?: ConditionSource[];
+}
+
+/** Precios por farmacia para productos sugeridos en resultados. */
+export interface ProductPriceMap {
+  ahumada?: number | null;
+  salcobrand?: number | null;
+  cruz_verde?: number | null;
+}
+
+/** Producto sugerido proveniente del scraper HU22 en la pantalla de resultados. */
+export interface SuggestedProduct {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  precios: ProductPriceMap;
+  precio_minimo?: number | null;
+  farmacia_minimo?: 'ahumada' | 'salcobrand' | 'cruz_verde' | null;
+  url?: string | null;
+  fuente?: string;
+  fecha_consulta?: string;
+  matchedQuery?: string;
+  relevanceScore?: number;
+  /** Componentes recomendados detectados en el producto. */
+  matchedIngredients?: string[];
+  /** Afecciones asociadas según componentes coincidentes. */
+  matchedConditions?: string[];
 }
 
 /** Fila devuelta por el backend (#116) o reconstruida en modo local. */
@@ -135,14 +196,42 @@ export interface DocumentAcceptanceRecord {
 }
 
 export interface ConsentStatus {
+  /** true si se aceptaron consentimiento informado y política de privacidad vigentes. */
   accepted: boolean;
   acceptedAt: string | null;
-  /** Versión alineada con el catálogo legal del servidor. */
-  policyVersion: string;
-  /** Registros por documento aceptado (consentimiento, privacidad, etc.). */
+  /** Identificador anónimo del flujo actual (tótem). */
+  sessionId: string | null;
+  consentAnalysisAccepted: boolean;
+  privacyPolicyAccepted: boolean;
+  trainingConsentAccepted: boolean;
+  /** Flag enviado al backend para conservar imagen con fines de entrenamiento. */
+  allowTrainingStorage: boolean;
+  consentAnalysisVersion: string | null;
+  privacyPolicyVersion: string | null;
+  trainingConsentVersion: string | null;
+  /** Versión legal vigente del flujo (p. ej. consentimiento informado). */
+  legalVersion: string | null;
+  /** Registros por documento aceptado en el servidor. */
   acceptances?: DocumentAcceptanceRecord[];
-  /** Última sincronización con API (ISO), si aplica. */
   lastSyncedAt?: string | null;
+}
+
+/** Campos de consentimiento enviados con la imagen al analizar. */
+export interface AnalysisConsentPayload {
+  consentAccepted: boolean;
+  privacyAccepted: boolean;
+  allowTrainingStorage: boolean;
+  legalVersion: string;
+  sessionId: string;
+}
+
+export type AnalysisJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface AnalysisJobSubmitResponse {
+  jobId: string;
+  status: AnalysisJobStatus;
+  position: number;
+  pollIntervalSeconds: number;
 }
 
 export interface ImageAsset {

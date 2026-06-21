@@ -1,4 +1,4 @@
-import { apiUrl, getApiBaseUrl } from '../utils/api';
+import { apiUrl, isApiAvailable } from '../utils/api';
 import { parseApiErrorMessage } from '../utils/apiErrors';
 import { formatApiNetworkError } from '../utils/networkErrors';
 import type { FaceDetection } from '../types';
@@ -27,7 +27,7 @@ export const analysisService = {
     userId: string,
     confidenceThreshold: number = 0.25
   ): Promise<{ data: AnalysisResponse } | { error: string }> {
-    if (!getApiBaseUrl()) {
+    if (!isApiAvailable()) {
       return { error: 'No hay servidor de análisis configurado. Verifica VITE_API_BASE_URL en .env' };
     }
 

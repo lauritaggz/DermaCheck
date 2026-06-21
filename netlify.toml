@@ -1,0 +1,19 @@
+# DermaCheck — despliegue del frontend en Netlify (solo carpeta web/).
+#
+# IMPORTANTE: debe publicarse web/dist (build de Vite), NO la carpeta web/ con el código fuente.
+#
+# Variables en Netlify → Environment variables (opcional):
+#   VITE_API_BASE_URL  → URL pública del backend (p. ej. https://dermacheck.duckdns.org)
+
+[build]
+  command = "cd web && npm ci && npm run build"
+  publish = "web/dist"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web/ netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

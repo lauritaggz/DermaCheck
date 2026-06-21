@@ -4,22 +4,201 @@
 
 @layer base {
   body {
-    @apply m-0 bg-white text-text antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: #F8FAFC;
+    color: #1A1A1A;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-transform: none;
+    font-variant: normal;
   }
 
   #root {
-    @apply min-h-screen;
+    min-height: 100vh;
   }
 }
 
-@layer utilities {
-  /* Utilities para orientación de tótem */
-  .totem-portrait {
-    @apply max-w-[1080px] mx-auto;
+@layer components {
+  /* Fondo principal de la app */
+  .app-shell {
+    min-height: 100vh;
+    background-color: #F8FAFC;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(27, 94, 150, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 10%, rgba(20, 184, 166, 0.05) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
   }
 
-  .totem-landscape {
-    @apply max-w-full;
+  /* Tarjeta elevada principal */
+  .surface-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 24px rgba(15, 42, 74, 0.08);
+  }
+
+  .surface-card-hover {
+    transition: all 0.25s ease;
+  }
+
+  .surface-card-hover:hover {
+    border-color: rgba(27, 94, 150, 0.2);
+    box-shadow: 0 12px 40px rgba(15, 42, 74, 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* Tarjeta con borde de acento IA */
+  .ai-card {
+    background: white;
+    border: 1px solid rgba(20, 184, 166, 0.2);
+    border-radius: 1.25rem;
+    box-shadow: 0 0 0 1px rgba(27, 94, 150, 0.05), 0 8px 32px rgba(13, 148, 136, 0.1);
+  }
+
+  /* Texto con gradiente de marca */
+  .text-brand-gradient {
+    background: linear-gradient(135deg, #1B5E96 0%, #0D9488 55%, #6366F1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Patrón de puntos decorativo */
+  .dot-pattern {
+    background-image: radial-gradient(circle, rgba(27, 94, 150, 0.12) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Esquinas de escáner facial */
+  .scan-corners {
+    position: relative;
+  }
+
+  .scan-corners::before,
+  .scan-corners::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: #14B8A6;
+    border-style: solid;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .scan-corners::before {
+    top: 12px;
+    left: 12px;
+    border-width: 3px 0 0 3px;
+    border-radius: 4px 0 0 0;
+  }
+
+  .scan-corners::after {
+    bottom: 12px;
+    right: 12px;
+    border-width: 0 3px 3px 0;
+    border-radius: 0 0 4px 0;
+  }
+
+  /* Línea de escaneo animada */
+  .scan-line-overlay {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .scan-line-overlay::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #14B8A6, transparent);
+    box-shadow: 0 0 12px rgba(20, 184, 166, 0.6);
+    animation: scanSweep 2.5s ease-in-out infinite;
+  }
+
+  /* Botón principal con brillo */
+  .btn-primary-glow {
+    background: linear-gradient(135deg, #1B5E96 0%, #0D9488 100%);
+    box-shadow: 0 4px 20px rgba(27, 94, 150, 0.35);
+    transition: all 0.25s ease;
+  }
+
+  .btn-primary-glow:hover:not(:disabled) {
+    box-shadow: 0 8px 28px rgba(13, 148, 136, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary-glow:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* Badge de severidad */
+  .severity-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .severity-pill--none {
+    background: #ECFDF5;
+    color: #047857;
+    border-color: #A7F3D0;
+  }
+
+  .severity-pill--low {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-color: #BFDBFE;
+  }
+
+  .severity-pill--moderate {
+    background: #FFFBEB;
+    color: #B45309;
+    border-color: #FDE68A;
+  }
+
+  .severity-pill--high {
+    background: #FEF2F2;
+    color: #B91C1C;
+    border-color: #FECACA;
+  }
+
+  /* Landing: evitar confusión visual i/I en etiquetas pequeñas */
+  .landing-text,
+  .landing-text * {
+    text-transform: none;
+    font-variant: normal;
+  }
+
+  .landing-section-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+}
+
+@keyframes scanSweep {
+  0%, 100% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
   }
 }

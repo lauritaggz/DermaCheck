@@ -1,8 +1,9 @@
 """
 Catálogo de condiciones dermatológicas.
-Información médica estructurada para cada afección que el modelo puede detectar.
+Información educativa estructurada para cada afección que el modelo puede detectar.
 
-Este catálogo es revisado por profesionales de la salud y versionado en Git.
+Contenido redactado en español con base en referencias DermNet (dermnetnz.org).
+No sustituye evaluación médica presencial.
 """
 
 from __future__ import annotations
@@ -11,9 +12,17 @@ from typing import TypedDict
 
 
 class ConditionRequirements(TypedDict):
-    """Criterios para determinar si requiere evaluación médica."""
+    """Criterios algorítmicos (YOLO) para sugerir evaluación médica."""
     confianza_mayor_a: float
     cantidad_detecciones: int
+
+
+class ConditionSource(TypedDict):
+    """Referencia verificable para trazabilidad de recomendaciones."""
+    nombre: str
+    titulo: str
+    url: str
+    uso: str
 
 
 class ConditionData(TypedDict):
@@ -27,20 +36,64 @@ class ConditionData(TypedDict):
     requiere_evaluacion_si: ConditionRequirements
     recomendaciones: list[str]
     advertencias: list[str]
+    criterios_derivacion: list[str]
+    fuentes: list[ConditionSource]
     color_ui: str
 
 
-# Catálogo principal de condiciones
+DERMNET_ACNE: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Acne",
+    "url": "https://dermnetnz.org/topics/acne",
+    "uso": "Descripción general, cuidados, manejo y signos de consulta",
+}
+
+DERMNET_ROSACEA: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Rosacea",
+    "url": "https://dermnetnz.org/topics/rosacea",
+    "uso": "Cuidado de piel sensible, desencadenantes y seguimiento",
+}
+
+DERMNET_DERMATITIS: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Dermatitis",
+    "url": "https://dermnetnz.org/topics/dermatitis",
+    "uso": "Barrera cutánea, emolientes y signos de alarma",
+}
+
+DERMNET_DRY_SKIN: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Dry skin",
+    "url": "https://dermnetnz.org/topics/dry-skin",
+    "uso": "Xerosis, hidratación y hábitos de cuidado",
+}
+
+DERMNET_COMEDONES: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Comedones",
+    "url": "https://dermnetnz.org/topics/comedones",
+    "uso": "Poros obstruidos, limpieza y evitar manipulación",
+}
+
+DERMNET_PIGMENTATION: ConditionSource = {
+    "nombre": "DermNet",
+    "titulo": "Pigmentation disorders",
+    "url": "https://dermnetnz.org/topics/pigmentation-disorders",
+    "uso": "Fotoprotección, cambios sospechosos y orientación general",
+}
+
+
 CONDITIONS_CATALOG: dict[str, ConditionData] = {
     "acne": {
         "id": "acne",
         "label_es": "Acné",
         "label_en": "Acne",
-        "descripcion_corta": "Lesiones inflamatorias en la piel (pápulas, pústulas)",
+        "descripcion_corta": "Lesiones inflamatorias y poros obstruidos en rostro",
         "descripcion_medica": (
-            "Afección cutánea caracterizada por la presencia de comedones, pápulas y pústulas "
-            "causadas por la obstrucción de los folículos pilosos con sebo y células muertas. "
-            "Comúnmente asociado con cambios hormonales, estrés y factores genéticos."
+            "Alteración frecuente de la piel asociada a poros obstruidos, exceso de sebo "
+            "e inflamación de folículos pilosos. DermaCheck solo entrega orientación educativa "
+            "visual; no confirma ni descarta diagnóstico médico."
         ),
         "severidad_base": "leve-moderada",
         "requiere_evaluacion_si": {
@@ -48,28 +101,36 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 5,
         },
         "recomendaciones": [
-            "Limpieza facial suave dos veces al día con productos no comedogénicos",
-            "Evitar tocar o exprimir las lesiones para prevenir cicatrices",
-            "Usar protector solar libre de aceite (oil-free)",
-            "Considerar productos con ácido salicílico, niacinamida o peróxido de benzoilo",
-            "Mantener el cabello limpio y alejado del rostro",
+            "Usar un limpiador suave, evitando frotar la piel o productos abrasivos.",
+            "Mantener hidratación ligera y no comedogénica para apoyar la barrera cutánea.",
+            "Usar protector solar de amplio espectro durante el día.",
+            "Evitar manipular, apretar o exprimir lesiones; puede aumentar irritación o marcas.",
+            "Introducir productos activos de forma gradual para reducir riesgo de irritación.",
         ],
         "advertencias": [
-            "Si el acné persiste por más de 3 meses sin mejoría, consultar a un dermatólogo",
-            "Si presenta dolor intenso, inflamación severa o fiebre, buscar atención médica",
-            "El acné quístico o nodular requiere tratamiento dermatológico profesional",
+            "Esta información es educativa y no reemplaza la evaluación de un dermatólogo.",
+            "Los tratamientos con antibióticos, isotretinoína u otros fármacos requieren prescripción médica.",
         ],
+        "criterios_derivacion": [
+            "lesiones dolorosas o profundas",
+            "cicatrices o marcas persistentes",
+            "empeoramiento persistente pese a cuidado básico",
+            "lesiones extensas o inflamación importante",
+            "sospecha de infección",
+            "impacto significativo en calidad de vida",
+        ],
+        "fuentes": [DERMNET_ACNE],
         "color_ui": "blue",
     },
     "eczema": {
         "id": "eczema",
         "label_es": "Eczema/Dermatitis",
         "label_en": "Eczema/Dermatitis",
-        "descripcion_corta": "Áreas con enrojecimiento, descamación y sequedad",
+        "descripcion_corta": "Enrojecimiento, sequedad y descamación con barrera comprometida",
         "descripcion_medica": (
-            "Condición inflamatoria de la piel que causa enrojecimiento, picazón, descamación y sequedad. "
-            "Puede ser causada por factores ambientales, alergias, irritantes o predisposición genética. "
-            "La barrera cutánea se encuentra comprometida."
+            "Condición inflamatoria que puede manifestarse con picazón, sequedad y enrojecimiento. "
+            "El cuidado prioriza reparar la barrera cutánea y evitar irritantes. "
+            "DermaCheck no diagnostica eczema ni descarta otras dermatitis."
         ),
         "severidad_base": "leve",
         "requiere_evaluacion_si": {
@@ -77,28 +138,35 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 3,
         },
         "recomendaciones": [
-            "Aplicar cremas hidratantes ricas en ceramidas y ácido hialurónico",
-            "Evitar productos con alcohol, fragancias fuertes o sulfatos",
-            "Usar limpiadores suaves y sin jabón",
-            "Aplicar compresas frías si hay picazón intensa",
-            "Evitar baños con agua muy caliente",
+            "Aplicar emolientes e hidratantes con frecuencia, especialmente tras la limpieza.",
+            "Usar limpiadores suaves sin jabón agresivo ni fragancias fuertes.",
+            "Preferir baños breves con agua tibia, no caliente.",
+            "Evitar roces, exfoliantes agresivos y productos con alcohol en zonas sensibles.",
+            "Identificar y reducir posibles irritantes del entorno cuando sea posible.",
         ],
         "advertencias": [
-            "Si la piel presenta exudación, costras o signos de infección, consultar médico",
-            "Si la picazón interfiere con el sueño o actividades diarias, buscar atención",
-            "El eczema severo o extendido requiere evaluación dermatológica",
+            "Los corticoides tópicos u orales son tratamientos médicos que requieren evaluación profesional.",
+            "No usar medicamentos con receta como si fueran productos cosméticos de rutina.",
         ],
+        "criterios_derivacion": [
+            "dolor, secreción o supuración",
+            "costras, heridas abiertas o signos de infección",
+            "extensión importante del enrojecimiento",
+            "picazón intensa que interfiere con el sueño",
+            "empeoramiento rápido o brotes frecuentes",
+        ],
+        "fuentes": [DERMNET_DERMATITIS],
         "color_ui": "red",
     },
     "manchas": {
         "id": "manchas",
         "label_es": "Manchas/Hiperpigmentación",
         "label_en": "Hyperpigmentation",
-        "descripcion_corta": "Zonas de piel con tono más oscuro (melasma, manchas solares)",
+        "descripcion_corta": "Zonas con tono más oscuro por mayor melanina",
         "descripcion_medica": (
-            "Áreas de la piel que presentan mayor concentración de melanina, resultando en tonos más oscuros. "
-            "Puede ser causada por exposición solar, cambios hormonales, inflamación previa (PIH) o envejecimiento. "
-            "Generalmente es benigna pero puede requerir tratamiento cosmético."
+            "Cambios en el color de la piel por distintas causas (sol, inflamación previa, "
+            "envejecimiento). El cuidado educativo prioriza fotoprotección y observación. "
+            "DermaCheck no puede descartar lesiones pigmentadas que requieren evaluación presencial."
         ),
         "severidad_base": "cosmética",
         "requiere_evaluacion_si": {
@@ -106,28 +174,35 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 4,
         },
         "recomendaciones": [
-            "Usar protector solar SPF 50+ diariamente, incluso en días nublados",
-            "Aplicar sérum con vitamina C por las mañanas",
-            "Considerar productos con ácido azelaico o niacinamida",
-            "Evitar exposición solar directa entre 10am y 4pm",
-            "Usar sombrero de ala ancha al estar al sol",
+            "Usar protector solar de amplio espectro a diario, incluso en días nublados.",
+            "Evitar exposición solar directa prolongada y reaplicar fotoprotección.",
+            "Mantener rutina suave de limpieza e hidratación sin agredir la piel.",
+            "Introducir activos cosméticos despigmentantes solo con paciencia y tolerancia.",
+            "No prometer eliminación completa de manchas; los cambios suelen ser graduales.",
         ],
         "advertencias": [
-            "Si una mancha cambia de forma, tamaño o color rápidamente, consultar dermatólogo",
-            "Manchas asimétricas o con bordes irregulares requieren evaluación profesional",
-            "Vigilar manchas que sangran, pican o no responden a protección solar",
+            "Algunas lesiones pigmentadas requieren evaluación dermatológica presencial.",
+            "Los productos cosméticos no sustituyen diagnóstico ni tratamiento médico de manchas.",
         ],
+        "criterios_derivacion": [
+            "cambio rápido de tamaño, forma o color",
+            "bordes irregulares o asimetría",
+            "sangrado, dolor, picor persistente o crecimiento",
+            "varios colores dentro de la misma lesión",
+            "mancha que no responde a fotoprotección y seguimiento",
+        ],
+        "fuentes": [DERMNET_PIGMENTATION],
         "color_ui": "amber",
     },
     "puntos-negros": {
         "id": "puntos-negros",
         "label_es": "Puntos Negros",
         "label_en": "Blackheads",
-        "descripcion_corta": "Comedones abiertos (poros obstruidos oxidados)",
+        "descripcion_corta": "Comedones abiertos por acumulación de sebo en poros",
         "descripcion_medica": (
-            "Comedones abiertos que se forman cuando los poros se obstruyen con sebo y células muertas. "
-            "La oxidación del sebo expuesto al aire le da el color negro característico. "
-            "Común en zona T (frente, nariz, mentón) en pieles grasas o mixtas."
+            "Comedones abiertos formados por sebo y células muertas en el folículo; "
+            "el aspecto oscuro se debe a oxidación del contenido, no a suciedad. "
+            "DermaCheck ofrece orientación general, no diagnóstico clínico."
         ),
         "severidad_base": "leve",
         "requiere_evaluacion_si": {
@@ -135,27 +210,35 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 10,
         },
         "recomendaciones": [
-            "Limpieza facial profunda 1-2 veces por semana con productos exfoliantes",
-            "Usar productos con ácido salicílico o retinoides suaves",
-            "Evitar extracciones agresivas que puedan irritar la piel",
-            "Considerar limpieza facial profesional cada 4-6 semanas",
-            "Mantener la piel hidratada para evitar exceso de producción de sebo",
+            "Explicar que los puntos negros son poros obstruidos, no suciedad superficial.",
+            "Usar limpieza facial suave de forma regular, sin frotar en exceso.",
+            "Evitar extraer o apretar comedones; puede irritar y dejar marcas.",
+            "Considerar productos no comedogénicos y activos de apoyo como ácido salicílico con gradualidad.",
+            "Evitar exfoliación física agresiva o frecuente en la misma zona.",
         ],
         "advertencias": [
-            "Evitar pellizcar o exprimir los comedones para prevenir infección",
-            "Si se inflaman o duelen, podría ser acné y requerir tratamiento diferente",
+            "La extracción agresiva en casa aumenta riesgo de inflamación e infección.",
+            "Si hay dolor, inflamación extensa o lesiones profundas, puede tratarse de acné inflamatorio.",
         ],
+        "criterios_derivacion": [
+            "inflamación importante o dolor",
+            "lesiones extensas con enrojecimiento",
+            "empeoramiento persistente",
+            "sospecha de infección",
+            "duda sobre el tipo de lesión",
+        ],
+        "fuentes": [DERMNET_COMEDONES],
         "color_ui": "blue",
     },
     "resequedad": {
         "id": "resequedad",
         "label_es": "Resequedad",
         "label_en": "Dryness",
-        "descripcion_corta": "Piel deshidratada con tirantez y descamación",
+        "descripcion_corta": "Piel seca con tirantez y posible descamación (xerosis)",
         "descripcion_medica": (
-            "Condición caracterizada por falta de humedad en la capa externa de la piel (estrato córneo). "
-            "Puede manifestarse con sensación de tirantez, descamación fina, aspereza y pérdida de luminosidad. "
-            "Causada por factores ambientales, uso de productos inadecuados o falta de hidratación."
+            "Disminución de humedad en la capa externa de la piel que puede causar tirantez, "
+            "aspereza y descamación leve. El cuidado prioriza emolientes y hábitos suaves. "
+            "DermaCheck no identifica causas internas o sistémicas de sequedad."
         ),
         "severidad_base": "leve",
         "requiere_evaluacion_si": {
@@ -163,27 +246,35 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 4,
         },
         "recomendaciones": [
-            "Aplicar cremas hidratantes con ceramidas, glicerina o ácido hialurónico",
-            "Usar limpiadores cremosos que no resequen (sin sulfatos)",
-            "Aumentar consumo de agua (mínimo 2 litros diarios)",
-            "Usar humidificador en ambientes secos",
-            "Evitar lavados excesivos y agua muy caliente",
+            "Hidratar con emolientes de forma frecuente, especialmente tras baño o limpieza.",
+            "Usar limpiadores suaves y syndets que no eliminen la barrera lipídica.",
+            "Preferir duchas breves con agua tibia; evitar agua muy caliente.",
+            "Proteger la piel del viento, frío extremo y ambientes muy secos cuando sea posible.",
+            "Aplicar hidratante sobre piel ligeramente húmeda para mejorar retención de humedad.",
         ],
         "advertencias": [
-            "Si la resequedad es severa y persistente, puede indicar condición subyacente",
-            "Descamación con enrojecimiento intenso requiere evaluación médica",
+            "La resequedad severa persistente puede asociarse a condiciones que requieren evaluación médica.",
+            "Productos cosméticos no reemplazan tratamiento médico si hay grietas profundas o infección.",
         ],
+        "criterios_derivacion": [
+            "grietas dolorosas o sangrado",
+            "picazón intensa persistente",
+            "signos de infección (enrojecimiento, pus, calor)",
+            "extensión corporal importante",
+            "empeoramiento sin respuesta a cuidado básico",
+        ],
+        "fuentes": [DERMNET_DRY_SKIN],
         "color_ui": "green",
     },
     "rosacea": {
         "id": "rosacea",
         "label_es": "Rosácea",
         "label_en": "Rosacea",
-        "descripcion_corta": "Enrojecimiento facial difuso con posibles vasos visibles",
+        "descripcion_corta": "Enrojecimiento facial con piel sensible y posibles brotes",
         "descripcion_medica": (
-            "Condición inflamatoria crónica que causa enrojecimiento persistente en el rostro, "
-            "especialmente en mejillas, nariz, frente y mentón. Puede presentar vasos sanguíneos visibles, "
-            "brotes similares al acné y sensación de ardor. Empeora con factores desencadenantes específicos."
+            "Condición crónica que puede manifestarse con enrojecimiento, sensibilidad y brotes. "
+            "Requiere enfoque distinto al acné común. DermaCheck no confirma diagnóstico de rosácea "
+            "ni descarta otras causas de enrojecimiento facial."
         ),
         "severidad_base": "leve-moderada",
         "requiere_evaluacion_si": {
@@ -191,18 +282,24 @@ CONDITIONS_CATALOG: dict[str, ConditionData] = {
             "cantidad_detecciones": 3,
         },
         "recomendaciones": [
-            "Usar productos suaves para piel sensible, sin alcohol ni fragancias",
-            "Aplicar protector solar mineral (óxido de zinc o dióxido de titanio)",
-            "Evitar desencadenantes: alcohol, comidas picantes, calor extremo",
-            "Considerar productos con niacinamida, azelaic acid o metronidazol tópico",
-            "Llevar un diario de brotes para identificar desencadenantes personales",
+            "Priorizar limpieza muy suave y productos formulados para piel sensible.",
+            "Usar hidratante calmante y protector solar de amplio espectro a diario.",
+            "Evitar fragancias, alcohol fuerte, exfoliantes agresivos y productos muy irritantes.",
+            "Identificar desencadenantes personales (calor, sol intenso, ciertos alimentos, estrés).",
+            "No tratar la rosácea como acné común ni combinar muchos activos exfoliantes a la vez.",
         ],
         "advertencias": [
-            "La rosácea es una condición crónica que requiere diagnóstico dermatológico",
-            "Si presenta engrosamiento de la piel nasal, consultar especialista",
-            "Síntomas oculares (ojos rojos, ardor) requieren evaluación oftalmológica",
-            "Rosácea severa puede requerir tratamiento con antibióticos orales",
+            "La rosácea es una condición que suele requerir diagnóstico y seguimiento dermatológico.",
+            "Antibióticos tópicos u orales son tratamientos médicos, no recomendaciones cosméticas.",
         ],
+        "criterios_derivacion": [
+            "enrojecimiento persistente o brotes frecuentes",
+            "ardor intenso, dolor o sensación de quemazón marcada",
+            "síntomas oculares (ojos rojos, irritados, visión borrosa)",
+            "engrosamiento o cambios en la piel de la nariz",
+            "empeoramiento progresivo pese a cuidado básico",
+        ],
+        "fuentes": [DERMNET_ROSACEA],
         "color_ui": "red",
     },
 }

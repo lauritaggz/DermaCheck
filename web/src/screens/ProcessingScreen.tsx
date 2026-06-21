@@ -1,207 +1,219 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
-import { useAppState } from '../context/AppContext';
-import { ScanIcon } from '../components/Icons';
-import { useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
+import { AppShell } from '../components/layout/AppShell';
+import { FlowStepper } from '../components/layout/FlowStepper';
+import { SectionHeader } from '../components/layout/SectionHeader';
+import { AnalysisProgress } from '../components/analysis/AnalysisProgress';
+import { ScanLoadingAnimation } from '../components/analysis/ScanLoadingAnimation';
+import { ErrorState } from '../components/ui/ErrorState';
+import { useAppState, MIN_FACE_CAPTURES } from '../context/AppContext';
+import { buildAnalysisConsentPayload, useDermatologyAnalysis } from '../hooks/useDermatologyAnalysis';
+import type { QueueProgressUpdate } from '../services/analysisJobService';
+import { isConsentComplete } from '../utils/consentHelpers';
+import { resolveKioskUserId } from '../services/kioskService';
+import type { AnalysisJobStatus, ImageAsset } from '../types';
+
+const STEPS = [
+  { label: 'Cargando imágenes', threshold: 20 },
+  { label: 'Ejecutando análisis IA', threshold: 40 },
+  { label: 'Detectando afecciones', threshold: 70 },
+  { label: 'Generando recomendaciones', threshold: 90 },
+];
 
 export function ProcessingScreen() {
-  const { pendingImage, user, setAnalysisResult, setPendingImage } = useAppState();
+  const {
+    imagesForAnalysis,
+    pendingImages,
+    setAnalysisResult,
+    clearPendingImages,
+    clearImagesForAnalysis,
+    setResultImageUrls,
+    consent,
+  } = useAppState();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
-  const { analyzeFaceImage, error, clearError } = useDermatologyAnalysis();
+  const { analyzeFaceImage, analyzeFaceImagesDouble, error, clearError } = useDermatologyAnalysis();
+  const runStartedRef = useRef(false);
+  const analysisLockRef = useRef<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [processingCount, setProcessingCount] = useState(0);
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [queueStatus, setQueueStatus] = useState<AnalysisJobStatus | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
+
+  const handleQueueUpdate = ({ status, position }: QueueProgressUpdate) => {
+    setQueueStatus(status);
+    setQueuePosition(position);
+  };
 
   useEffect(() => {
-    if (!pendingImage || !user) {
-      navigate('/home');
+    const images: ImageAsset[] = imagesForAnalysis ?? pendingImages;
+
+    if (!isConsentComplete(consent)) {
+      navigate('/consent');
       return;
     }
-    const currentImage = pendingImage;
-    const currentUser = user;
 
-    async function runAnalysis() {
+    const consentPayload = buildAnalysisConsentPayload(consent);
+    if (!consentPayload) {
+      navigate('/consent');
+      return;
+    }
+
+    if (images.length < MIN_FACE_CAPTURES) {
+      navigate('/image-picker');
+      return;
+    }
+
+    const runKey = `${consentPayload.sessionId}:${images.length}:${images.map((img) => img.blob.size).join('-')}`;
+    if (runStartedRef.current || analysisLockRef.current === runKey) return;
+
+    runStartedRef.current = true;
+    analysisLockRef.current = runKey;
+    setPreviewUrls(images.map((img) => img.objectUrl));
+    setProcessingCount(images.length);
+
+    const isDouble = images.length >= 2;
+
+    async function run(consentPayload: NonNullable<ReturnType<typeof buildAnalysisConsentPayload>>) {
       try {
-        const result = await analyzeFaceImage({
-          imageBlob: currentImage.blob,
-          userId: currentUser.id,
-          confidenceThreshold: 0.25,
-        });
+        const userId = await resolveKioskUserId();
+        const result = isDouble
+          ? await analyzeFaceImagesDouble({
+              imageBlob1: images[0].blob,
+              imageBlob2: images[1].blob,
+              userId,
+              consent: consentPayload,
+              confidenceThreshold: 0.25,
+              onQueueUpdate: handleQueueUpdate,
+            })
+          : await analyzeFaceImage({
+              imageBlob: images[0].blob,
+              userId,
+              consent: consentPayload,
+              confidenceThreshold: 0.25,
+              onQueueUpdate: handleQueueUpdate,
+            });
 
-        if (!result) {
-          return;
-        }
+        if (!result) return;
 
-        // Guardar resultado completo (con diagnóstico)
+        setResultImageUrls(images.map((img) => img.objectUrl));
         setAnalysisResult(result);
-
-        // Actualizar progreso a 100%
         setProgress(100);
-
-        // Navegar a resultados
+        clearPendingImages({ revokeUrls: false });
+        clearImagesForAnalysis();
         setTimeout(() => navigate('/analysis/results'), 500);
-      } finally {
-        URL.revokeObjectURL(currentImage.objectUrl);
-        setPendingImage(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error al iniciar el análisis';
+        setBootError(message);
+        runStartedRef.current = false;
+        analysisLockRef.current = null;
       }
     }
 
-    // Simular progreso mientras se procesa
     const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) {
+      setProgress((p) => {
+        if (p >= 90) {
           clearInterval(interval);
           return 90;
         }
-        return prev + 10;
+        return p + 10;
       });
     }, 500);
 
-    // Ejecutar análisis
-    runAnalysis();
-
+    run(consentPayload);
     return () => clearInterval(interval);
-  }, [pendingImage, user, navigate, setAnalysisResult, setPendingImage, analyzeFaceImage]);
+  }, [
+    analyzeFaceImage,
+    analyzeFaceImagesDouble,
+    clearImagesForAnalysis,
+    clearPendingImages,
+    consent,
+    setResultImageUrls,
+    imagesForAnalysis,
+    navigate,
+    pendingImages,
+    setAnalysisResult,
+  ]);
 
-  // Si hay error, mostrar botón para volver
-  if (error) {
+  const displayError = bootError ?? error;
+
+  const queueMessage = (() => {
+    if (queueStatus === 'queued') {
+      if (queuePosition === 0) {
+        return 'Próximo en procesarse';
+      }
+      if (queuePosition !== null && queuePosition > 0) {
+        const label = queuePosition === 1 ? 'persona' : 'personas';
+        return `En cola · ${queuePosition} ${label} antes que tú`;
+      }
+      return 'En cola de espera';
+    }
+    if (queueStatus === 'running') {
+      return null;
+    }
+    return null;
+  })();
+
+  if (displayError) {
     return (
       <PageTransition>
-        <ScreenContainer>
-          <div className="flex flex-col items-center justify-center min-h-screen">
-            <div className="max-w-2xl w-full text-center">
-              <div className="mb-8">
-                <div className="w-24 h-24 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
-                  <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-
-                <h1 className="text-3xl font-bold text-red-600 mb-4">
-                  Error en el Análisis
-                </h1>
-
-                <div className="bg-red-50 rounded-2xl p-6 mb-6 border-2 border-red-200">
-                  <p className="text-red-800">
-                    {error}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    clearError();
-                    navigate('/home');
-                  }}
-                  className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primaryDark transition-colors"
-                >
-                  Volver al inicio
-                </button>
-              </div>
-            </div>
-          </div>
-        </ScreenContainer>
+        <AppShell>
+          <ErrorState
+            title="Error en el análisis"
+            message={displayError}
+            onAction={() => {
+              clearError();
+              setBootError(null);
+              runStartedRef.current = false;
+              analysisLockRef.current = null;
+              navigate('/preview');
+            }}
+          />
+        </AppShell>
       </PageTransition>
     );
   }
 
-  const steps = [
-    { label: 'Cargando imagen', threshold: 20 },
-    { label: 'Ejecutando análisis IA', threshold: 40 },
-    { label: 'Detectando afecciones', threshold: 70 },
-    { label: 'Generando recomendaciones', threshold: 90 },
-  ];
-
   return (
     <PageTransition>
-      <ScreenContainer>
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="max-w-2xl w-full">
-          {/* Animated Icon */}
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl animate-pulse" />
-              <div className="relative w-28 h-28 bg-gradient-to-br from-primary to-primaryDark rounded-full 
-                            flex items-center justify-center shadow-2xl">
-                <ScanIcon className="w-14 h-14 text-white animate-pulse" />
-              </div>
+      <AppShell>
+        <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col justify-center">
+          <FlowStepper currentStep={4} />
+          <SectionHeader
+            badge="Procesamiento IA"
+            title={queueStatus === 'queued' ? 'Esperando turno' : 'Analizando tu piel'}
+            description={
+              queueMessage
+                ?? (processingCount >= 2
+                  ? 'Procesando 2 fotografías faciales'
+                  : 'Procesando tu fotografía facial')
+            }
+            align="center"
+          />
+
+          {queueStatus === 'queued' ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-6">
+              <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+              <p className="text-lg text-textMuted text-center max-w-md">
+                {queueMessage ?? 'En cola de espera'}
+              </p>
             </div>
-          </div>
-
-          {/* Title */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-primary mb-3">
-              Analizando Imagen
-            </h1>
-            <p className="text-lg text-textSecondary">
-              Nuestro modelo de IA está procesando tu fotografía facial
-            </p>
-          </div>
-
-          {/* Progress Card */}
-          <div className="bg-white rounded-3xl p-8 border-2 border-primary/10 shadow-xl mb-8">
-            {/* Progress Bar */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-textSecondary">Progreso del análisis</span>
-                <span className="text-lg font-bold text-primary">{progress}%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-primary via-blue-500 to-primaryDark h-full 
-                           transition-all duration-300 ease-out rounded-full relative overflow-hidden"
-                  style={{ width: `${progress}%` }}
-                >
-                  <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                </div>
-              </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <ScanLoadingAnimation imageUrls={previewUrls} />
+              <AnalysisProgress progress={progress} steps={STEPS} />
             </div>
+          )}
 
-            {/* Processing Steps */}
-            <div className="space-y-3">
-              {steps.map((step, idx) => {
-                const isCompleted = progress > step.threshold;
-                const isActive = progress > (steps[idx - 1]?.threshold || 0) && progress <= step.threshold;
-
-                return (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-3 p-4 rounded-xl transition-all
-                              ${isCompleted ? 'bg-green-50 border border-green-200' : 
-                                isActive ? 'bg-blue-50 border border-blue-200' : 
-                                'bg-gray-50 border border-gray-200'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                                   ${isCompleted ? 'bg-green-500' : 
-                                     isActive ? 'bg-blue-500 animate-pulse' : 
-                                     'bg-gray-300'}`}>
-                      {isCompleted ? (
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <span className="text-xs font-bold text-white">{idx + 1}</span>
-                      )}
-                    </div>
-                    <span className={`text-sm font-medium transition-colors
-                                   ${isCompleted ? 'text-green-700' : 
-                                     isActive ? 'text-blue-700' : 
-                                     'text-gray-500'}`}>
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Info Text */}
-          <p className="text-center text-sm text-textMuted">
-            Este proceso suele tomar entre 5 y 10 segundos. Por favor, no cierres esta ventana.
+          <p className="text-center text-sm text-textMuted mt-8">
+            {queueStatus === 'queued'
+              ? 'El análisis comenzará en cuanto termine el turno anterior.'
+              : 'Suele tomar 5–10 segundos. No cierres esta ventana.'}
           </p>
         </div>
-      </div>
-    </ScreenContainer>
+      </AppShell>
     </PageTransition>
   );
 }

@@ -1,15 +1,35 @@
 export const CONSENT_SUMMARY = `
-Este consentimiento informa que el servicio DermaCheck es una herramienta de orientación educativa sobre el cuidado cosmético de la piel, basada en análisis de imágenes faciales mediante inteligencia artificial. No constituye diagnóstico ni tratamiento médico. Los resultados no reemplazan la evaluación de un dermatólogo certificado.
+DermaCheck es una herramienta de orientación educativa sobre el cuidado cosmético de la piel. Utiliza imágenes faciales para generar un análisis preliminar mediante inteligencia artificial.
 
-Al usar este servicio, aceptas voluntariamente capturar tu imagen facial, que será procesada por un modelo de detección de afecciones cutáneas. Los hallazgos mostrados son indicativos y se expresan en lenguaje claro para fines informativos. Las recomendaciones de productos o activos son genéricas y no sustituyen prescripción médica.
+DermaCheck no entrega diagnóstico médico, no indica tratamiento clínico y no reemplaza la evaluación de un dermatólogo certificado.
 
-Para condiciones persistentes, dolorosas, que empeoran o generan inquietud, debes consultar presencialmente con un profesional de la salud.
+Al continuar, autorizas que tu imagen facial sea capturada y procesada temporalmente para generar el resultado del análisis. Las recomendaciones entregadas son generales y deben interpretarse como orientación inicial.
+
+Si presentas dolor, irritación intensa, lesiones que empeoran, heridas, sangrado, cambios rápidos en la piel o cualquier preocupación médica, debes consultar con un profesional de salud.
 `.trim();
 
 export const PRIVACY_SUMMARY = `
-DermaCheck recopila tu correo, nombre y fotografías faciales únicamente para brindarte el servicio de análisis dermatológico. Las imágenes se procesan temporalmente en el servidor y pueden almacenarse de forma anónima para mejorar el modelo de inteligencia artificial.
+DermaCheck procesa imágenes faciales únicamente para entregar el análisis dermatológico orientativo solicitado.
 
-No vendemos ni compartimos tus datos personales con terceros sin tu autorización expresa. Puedes solicitar la eliminación de tu información en cualquier momento.
+En el flujo de usuario final no se requiere crear cuenta ni iniciar sesión. Si decides ingresar tu correo para recibir el resumen del análisis, este se usará solo para enviar dicho resumen y no será almacenado como cuenta de usuario.
 
-Usamos medidas técnicas razonables para proteger tu privacidad, aunque ningún sistema digital es 100% seguro. Al continuar, aceptas los términos de esta política.
+Por defecto, las imágenes faciales se procesan para generar el análisis. El almacenamiento de imágenes para mejorar modelos de inteligencia artificial requiere una autorización opcional separada.
+
+DermaCheck no vende tus datos personales ni comparte tus imágenes faciales con terceros para fines comerciales.
+
+Puedes solicitar información o eliminación de tus datos mediante el canal de contacto definido por DermaCheck.
 `.trim();
+
+export const TRAINING_CONSENT_SUMMARY = `
+Autorizo que DermaCheck almacene una copia de mis imágenes faciales de forma separada, sin asociarlas a nombre, correo ni cuenta de usuario, con el fin de investigación interna, clasificación y mejora de modelos de inteligencia artificial.
+
+Entiendo que esta autorización es opcional y que puedo usar el análisis aunque no la acepte.
+
+Las imágenes autorizadas para mejora del modelo serán almacenadas en un entorno privado, con identificadores aleatorios, sin metadatos EXIF y con acceso restringido.
+`.trim();
+
+export const CONSENT_TRAINING_OPTIONAL_NOTE =
+  'Puedes usar DermaCheck aunque no autorices el uso de tus imágenes para mejora del modelo. Esa autorización es opcional.';
+
+export const CONSENT_MINORS_NOTICE =
+  'Si eres menor de edad, debes usar este servicio con autorización de tu madre, padre o tutor legal.';

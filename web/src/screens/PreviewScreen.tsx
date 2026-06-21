@@ -1,136 +1,163 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PrimaryButton, ScreenContainer } from '../components';
 import { PageTransition } from '../components/PageTransition';
-import { useAppState } from '../context/AppContext';
+import { AppShell } from '../components/layout/AppShell';
+import { FlowStepper } from '../components/layout/FlowStepper';
+import { SectionHeader } from '../components/layout/SectionHeader';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { useAppState, MIN_FACE_CAPTURES } from '../context/AppContext';
 import { evaluateImageBlob, type ImageQuality } from '../services/imageQualityService';
 import { loggerService } from '../services/loggerService';
 
 export function PreviewScreen() {
-  const { pendingImage, setPendingImage } = useAppState();
+  const { pendingImages, clearPendingImages, queueImagesForAnalysis } = useAppState();
   const navigate = useNavigate();
   const [analyzing, setAnalyzing] = useState(false);
-  const [imageQuality, setImageQuality] = useState<ImageQuality | null>(null);
+  const [qualities, setQualities] = useState<Array<ImageQuality | null>>([]);
+  const imageCount = pendingImages.length;
 
   useEffect(() => {
-    if (!pendingImage) return;
-    let active = true;
-    evaluateImageBlob(pendingImage.blob)
-      .then((quality) => {
-        if (active) setImageQuality(quality);
-      })
-      .catch(() => {
-        if (active) setImageQuality(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [pendingImage]);
+    if (imageCount < MIN_FACE_CAPTURES) {
+      navigate('/image-picker');
+      return;
+    }
 
-  if (!pendingImage) {
-    navigate('/home');
-    return null;
-  }
+    let active = true;
+    Promise.all(pendingImages.map((img) => evaluateImageBlob(img.blob).catch(() => null)))
+      .then((results) => {
+        if (active) setQualities(results);
+      });
+
+    return () => { active = false; };
+  }, [pendingImages, imageCount, navigate]);
+
+  if (imageCount < MIN_FACE_CAPTURES) return null;
+
+  const allGood = qualities.length === imageCount
+    && qualities.every((q) => q?.isGood ?? true);
+  const isDouble = imageCount >= 2;
 
   function handleRetake() {
-    if (!pendingImage) return;
+    clearPendingImages();
+    const source = pendingImages[0]?.source;
+    navigate(source === 'gallery' ? '/image-picker' : '/quality-scan');
+  }
 
-    loggerService.info('Usuario solicita recaptura de imagen');
-    URL.revokeObjectURL(pendingImage.objectUrl);
-    setPendingImage(null);
-    navigate('/quality-scan');
+  function handleAddSecond() {
+    const source = pendingImages[0]?.source;
+    navigate(source === 'gallery' ? '/image-picker' : '/quality-scan');
   }
 
   async function handleAnalyze() {
-    if (!pendingImage) return;
-    
     setAnalyzing(true);
-    loggerService.info('Usuario confirma envío de imagen a análisis', {
-      width: pendingImage.width,
-      height: pendingImage.height,
-      source: pendingImage.source,
-      quality: imageQuality,
-    });
+    queueImagesForAnalysis([...pendingImages]);
+    loggerService.info('Usuario confirma envío a análisis', { images: imageCount });
     navigate('/analysis/conditions');
   }
 
   return (
     <PageTransition>
-      <ScreenContainer maxWidth="xl" className="bg-gradient-to-br from-surface via-white to-secondary/20">
-        <div className="flex flex-col items-center justify-center min-h-screen py-4 sm:py-6">
-          <div className="w-full max-w-4xl px-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-5 text-center">
-              Previsualización
-            </h1>
+      <AppShell>
+        <div className="max-w-4xl mx-auto px-4 py-8 min-h-screen">
+          <FlowStepper currentStep={3} />
+          <SectionHeader
+            title="Vista previa"
+            description={
+              isDouble
+                ? 'Revisa tus 2 fotografías antes de iniciar el análisis con IA'
+                : 'Revisa tu fotografía antes de iniciar el análisis con IA'
+            }
+            align="center"
+          />
 
-            <div className="bg-white rounded-xl p-5 sm:p-6 mb-5 border border-borderLight shadow-lg">
-              {/* Layout horizontal: imagen a la izquierda, contenido a la derecha */}
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Imagen pequeña */}
-                <div className="w-full md:w-56 lg:w-64 flex-shrink-0">
-                  <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-100">
-                    <img
-                      src={pendingImage.objectUrl}
-                      alt="Imagen capturada"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
-                {/* Contenido: texto y botones */}
-                <div className="flex-1 flex flex-col">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
-                    {imageQuality?.isGood ?? true ? (
-                      <p className="text-sm text-blue-800">
-                        <strong>✓ Imagen válida</strong><br />
-                        La imagen cumple con los requisitos para el análisis.
-                      </p>
-                    ) : (
-                      <div className="text-sm text-amber-800">
-                        <strong>Calidad mejorable</strong>
-                        <ul className="mt-1 space-y-1">
-                          {(imageQuality?.issues ?? []).map((issue, idx) => (
-                            <li key={idx}>- {issue}</li>
-                          ))}
-                        </ul>
+          <div className="surface-card p-6">
+            <div className={`grid gap-4 mb-6 ${isDouble ? 'sm:grid-cols-2' : 'max-w-sm mx-auto'}`}>
+              {pendingImages.map((img, index) => {
+                const quality = qualities[index];
+                const isGood = quality?.isGood ?? true;
+                return (
+                  <div key={img.objectUrl}>
+                    <p className="text-sm font-semibold text-brand-900 mb-2">
+                      Fotografía {index + 1}
+                    </p>
+                    <div className="scan-corners ai-card aspect-[3/4] overflow-hidden relative">
+                      <img
+                        src={img.objectUrl}
+                        alt={`Vista previa ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div
+                        className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${
+                          isGood
+                            ? 'bg-emerald-500 text-white shadow-soft'
+                            : 'bg-amber-500 text-white'
+                        }`}
+                      >
+                        {isGood ? '✓ Válida' : '⚠ Revisar'}
                       </div>
-                    )}
+                    </div>
+                    <p className="text-xs text-textMuted mt-2 text-center">
+                      {img.width}×{img.height}
+                    </p>
                   </div>
-
-                  <div className="text-sm text-textSecondary space-y-2.5 mb-6 flex-1">
-                    <p>• Rostro centrado y visible</p>
-                    <p>• Iluminación adecuada</p>
-                    <p>• Resolución: {pendingImage.width} x {pendingImage.height}px</p>
-                  </div>
-
-                  {/* Botones en el contenido */}
-                  <div className="space-y-3">
-                    <PrimaryButton
-                      label={analyzing ? 'Analizando...' : 'Analizar con IA'}
-                      onClick={handleAnalyze}
-                      loading={analyzing}
-                      disabled={analyzing}
-                      className="w-full py-3.5 text-base"
-                    />
-
-                    <PrimaryButton
-                      label="Tomar otra foto"
-                      variant="secondary"
-                      onClick={handleRetake}
-                      disabled={analyzing}
-                      className="w-full py-3 text-base"
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
-            <p className="text-sm text-textMuted text-center mt-5">
-              El análisis tomará unos segundos. La imagen será procesada por nuestro modelo de IA.
-            </p>
+            <div
+              className={`rounded-xl p-4 mb-6 border-2 ${
+                allGood ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
+              }`}
+            >
+              {allGood ? (
+                <p className="text-sm text-emerald-800">
+                  <strong>Imagen{isDouble ? 'es' : ''} válida{isDouble ? 's' : ''}.</strong>
+                  {' '}Listas para el análisis dermatológico{isDouble ? ' combinado' : ''}.
+                </p>
+              ) : (
+                <p className="text-sm text-amber-800">
+                  <strong>Calidad mejorable en alguna foto.</strong> Puedes continuar o volver a capturar.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <PrimaryButton
+                  label={analyzing ? 'Iniciando análisis…' : 'Analizar con IA'}
+                  onClick={handleAnalyze}
+                  loading={analyzing}
+                  disabled={analyzing}
+                  className="w-full"
+                />
+                <PrimaryButton
+                  label="Volver a capturar"
+                  variant="secondary"
+                  onClick={handleRetake}
+                  disabled={analyzing}
+                  className="w-full"
+                />
+              </div>
+              {!isDouble && (
+                <PrimaryButton
+                  label="Agregar segunda foto (opcional)"
+                  variant="secondary"
+                  onClick={handleAddSecond}
+                  disabled={analyzing}
+                  className="w-full"
+                />
+              )}
+            </div>
           </div>
+
+          <p className="text-center text-sm text-textMuted mt-5">
+            {isDouble
+              ? 'Se analizarán 2 fotografías en una sola petición.'
+              : 'Puedes analizar con 1 foto o agregar una segunda para mayor cobertura.'}
+            {' '}Suele tomar unos segundos.
+          </p>
         </div>
-      </ScreenContainer>
+      </AppShell>
     </PageTransition>
   );
 }
