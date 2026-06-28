@@ -2,14 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buildVideoConstraints,
   dedupeVideoDevices,
-  isBuiltInTrackLabel,
-  isIriunTrackLabel,
   pickPermissionDevice,
   pickPreferredFromResolved,
   resolveCameraLabels,
   sortDevicesForProbe,
   type ResolvedCamera,
 } from '../utils/cameraDevices';
+import { loadCameraPreferences, saveCameraDeviceId } from '../utils/cameraPreferences';
 import { loggerService } from '../services/loggerService';
 
 interface UseCameraStreamResult {
@@ -30,7 +29,6 @@ async function listVideoDevices(): Promise<MediaDeviceInfo[]> {
   return dedupeVideoDevices(all.filter((d) => d.kind === 'videoinput'));
 }
 
-/** Obtiene permiso de cámara; prioriza Iriun pero acepta cualquier cámara como último recurso. */
 async function requestCameraPermission(): Promise<void> {
   const initial = await navigator.mediaDevices.enumerateDevices();
   const videoInputs = dedupeVideoDevices(initial.filter((d) => d.kind === 'videoinput'));
@@ -55,50 +53,32 @@ async function requestCameraPermission(): Promise<void> {
     }
   }
 
-  // Último recurso: permiso genérico (necesario si Iriun no está conectado)
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' },
+      audio: false,
+    });
+    stream.getTracks().forEach((t) => t.stop());
+    return;
+  } catch {
+    // continuar con fallback genérico
+  }
+
   const fallback = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
   fallback.getTracks().forEach((t) => t.stop());
 }
 
-function isWrongStream(
-  track: MediaStreamTrack | undefined,
-  target: ResolvedCamera | undefined,
-): boolean {
-  if (!track || !target) return false;
-  const label = track.label || '';
-  if (!label.trim()) return false;
-
-  if (target.isIriun) {
-    return isBuiltInTrackLabel(label) && !isIriunTrackLabel(label);
-  }
-
-  return false;
-}
-
-async function openCameraStream(
-  deviceId: string,
-  resolved: ResolvedCamera | undefined,
-): Promise<MediaStream> {
-  const isVirtual = resolved ? resolved.isIriun || !resolved.isBuiltIn : false;
+async function openCameraStream(deviceId: string): Promise<MediaStream> {
   const attempts: MediaStreamConstraints[] = [
     { video: { deviceId: { exact: deviceId } }, audio: false },
     { video: { deviceId: { ideal: deviceId } }, audio: false },
-    { video: buildVideoConstraints(deviceId, isVirtual), audio: false },
+    { video: buildVideoConstraints(deviceId), audio: false },
   ];
 
   let lastError: unknown;
   for (const constraints of attempts) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      const track = stream.getVideoTracks()[0];
-
-      if (isWrongStream(track, resolved)) {
-        stream.getTracks().forEach((t) => t.stop());
-        lastError = new DOMException('Wrong camera opened', 'NotReadableError');
-        continue;
-      }
-
-      return stream;
+      return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (err) {
       lastError = err;
     }
@@ -146,12 +126,9 @@ export function useCameraStream(): UseCameraStreamResult {
       }
 
       const resolved = await resolveCameraLabels(videoDevices);
-      const preferredId = pickPreferredFromResolved(
-        resolved,
-        userPinnedRef.current ? selectedIdRef.current : undefined,
-      );
-      const iriun = resolved.find((c) => c.isIriun);
-      const nextId = iriun && !userPinnedRef.current ? iriun.deviceId : preferredId;
+      const prefs = loadCameraPreferences();
+      const savedId = userPinnedRef.current ? selectedIdRef.current : prefs.deviceId;
+      const nextId = await pickPreferredFromResolved(resolved, savedId);
 
       selectedIdRef.current = nextId;
       setResolvedCameras(resolved);
@@ -174,6 +151,7 @@ export function useCameraStream(): UseCameraStreamResult {
   const selectCamera = useCallback((deviceId: string) => {
     userPinnedRef.current = true;
     selectedIdRef.current = deviceId;
+    saveCameraDeviceId(deviceId);
     stopStream();
     setSelectedDeviceId(deviceId);
   }, [stopStream]);
@@ -214,7 +192,7 @@ export function useCameraStream(): UseCameraStreamResult {
       stopStream();
 
       try {
-        const nextStream = await openCameraStream(selectedDeviceId, targetResolved);
+        const nextStream = await openCameraStream(selectedDeviceId);
         if (cancelled) {
           nextStream.getTracks().forEach((t) => t.stop());
           return;
@@ -222,14 +200,6 @@ export function useCameraStream(): UseCameraStreamResult {
 
         const track = nextStream.getVideoTracks()[0];
         const trackLabel = track?.label || targetResolved.label;
-
-        if (isWrongStream(track, targetResolved)) {
-          nextStream.getTracks().forEach((t) => t.stop());
-          setStream(null);
-          setActiveTrackLabel(null);
-          setError('El navegador abrió la cámara del PC. Elige «Iriun Webcam» en la lista o pulsa el botón verde.');
-          return;
-        }
 
         activeStream = nextStream;
         setActiveTrackLabel(trackLabel);
@@ -241,19 +211,10 @@ export function useCameraStream(): UseCameraStreamResult {
         setActiveTrackLabel(null);
 
         const name = err instanceof DOMException ? err.name : 'Error';
-        const fallback = resolvedCameras.find((c) => c.isBuiltIn && c.deviceId !== selectedDeviceId);
-
-        if (targetResolved.isIriun && fallback && !userPinnedRef.current) {
-          selectedIdRef.current = fallback.deviceId;
-          setSelectedDeviceId(fallback.deviceId);
-          setError('Iriun no respondió. Usando cámara del PC; elige Iriun en la lista cuando esté lista.');
-          return;
-        }
-
         setError(
           name === 'NotAllowedError'
             ? 'Permiso denegado.'
-            : `No se pudo abrir «${targetResolved.label}». Prueba otra en la lista.`,
+            : `No se pudo abrir «${targetResolved.label}». Prueba otra cámara en la lista.`,
         );
       } finally {
         if (!cancelled) setIsLoading(false);

@@ -3,7 +3,7 @@ import type { ProductSearchItem } from '../types/productSearch';
 import { getIngredientName, getRecommendationDisplayLabel } from './recommendationMatcher';
 import { normalizeTextForQuery } from './productQueryBuilder';
 
-export const MAX_SUGGESTED_PRODUCTS = 3;
+export const MAX_SUGGESTED_PRODUCTS = 4;
 
 export function getProductKey(product: Pick<SuggestedProduct, 'nombre' | 'url'>): string {
   return `${normalizeTextForQuery(product.nombre)}-${product.url ?? ''}`;
@@ -113,6 +113,7 @@ export function mergeDuplicateProducts(
 
     merged.set(key, {
       ...best,
+      imagen_url: best.imagen_url ?? other.imagen_url ?? null,
       precios: {
         ahumada: best.precios.ahumada ?? other.precios.ahumada ?? null,
         salcobrand: best.precios.salcobrand ?? other.precios.salcobrand ?? null,
@@ -173,6 +174,7 @@ export function mapSearchItemToSuggestedProduct(
     id: item.id,
     nombre: item.name,
     descripcion: item.description,
+    imagen_url: item.imageUrl ?? null,
     precios: item.prices,
     precio_minimo: item.minPrice,
     farmacia_minimo: item.minPharmacy,

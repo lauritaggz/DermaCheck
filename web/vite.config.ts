@@ -1,13 +1,15 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const lanHost = env.VITE_DEV_LAN_HOST
+  const lanDev = Boolean(lanHost)
 
   return {
-    plugins: [react()],
+    plugins: [react(), ...(lanDev ? [basicSsl()] : [])],
     build: {
       rollupOptions: {
         output: {
@@ -29,10 +31,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
-      // Vite 6+ bloquea hosts desconocidos (p. ej. IP LAN del iPad) sin esto.
+      // basicSsl() activa HTTPS cuando VITE_DEV_LAN_HOST está definido.
       allowedHosts: true,
       hmr: lanHost
-        ? { host: lanHost, port: 5173, protocol: 'ws' }
+        ? { host: lanHost, port: 5173, protocol: lanDev ? 'wss' : 'ws' }
         : undefined,
       // Un solo puerto para dispositivos móviles: el iPad solo abre :5173.
       proxy: {

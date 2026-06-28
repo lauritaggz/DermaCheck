@@ -18,6 +18,21 @@ REFERENCE_WARNING = (
     "Precios referenciales. Verificar en la farmacia antes de comprar."
 )
 
+FARMACOMPARA_BASE = "https://www.farmacompara.cl"
+
+
+def normalize_farmacompara_url(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    if text.startswith("//"):
+        return f"https:{text}"
+    if text.startswith("/"):
+        return f"{FARMACOMPARA_BASE}{text}"
+    return text
+
 
 def parse_clp_price(raw: str | None) -> int | None:
     if not raw:
@@ -81,6 +96,14 @@ def extract_precios_from_card(card: Tag) -> ProductPrices:
     return precios
 
 
+def extract_image_from_card(card: Tag) -> str | None:
+    img = card.select_one("img.product-img") or card.select_one(".img-container img")
+    if not img:
+        return None
+    raw_src = img.get("src") or img.get("data-src") or img.get("data-lazy-src")
+    return normalize_farmacompara_url(str(raw_src) if raw_src else None)
+
+
 def parse_product_card(card: Tag, query: str, fecha: date | None = None) -> ProductSearchItem | None:
     nombre = card.get("data-name") or ""
     if not nombre:
@@ -90,9 +113,8 @@ def parse_product_card(card: Tag, query: str, fecha: date | None = None) -> Prod
         return None
 
     link = card.select_one("a.product-name[href]")
-    url = link["href"] if link and link.has_attr("href") else ""
-    if url and url.startswith("/"):
-        url = f"https://www.farmacompara.cl{url}"
+    raw_url = link["href"] if link and link.has_attr("href") else ""
+    url = normalize_farmacompara_url(str(raw_url) if raw_url else None) or ""
 
     precios = extract_precios_from_card(card)
     min_data = compute_min_price(precios)
@@ -113,6 +135,7 @@ def parse_product_card(card: Tag, query: str, fecha: date | None = None) -> Prod
         farmacia_minimo=farmacia_minimo,
         url=url,
         descripcion=None,
+        imagen_url=extract_image_from_card(card),
         fecha_consulta=fecha or date.today(),
     )
 

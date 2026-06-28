@@ -3,7 +3,11 @@ from __future__ import annotations
 import logging
 
 from app.schemas.product_search import ProductPrices
-from app.services.product_search.detail_parser import parse_detail_prices, parse_product_description
+from app.services.product_search.detail_parser import (
+    parse_detail_prices,
+    parse_product_description,
+    parse_product_image,
+)
 from app.services.product_search.filters import is_prescription_product, is_skincare_product
 from app.services.product_search.parsers import parse_farmacompara_html
 
@@ -99,10 +103,16 @@ class FarmacomparaPlaywrightScraper:
             logger.warning("Playwright detail error (%s): %s", url, exc)
             return None, str(exc)
 
-    async def fetch_product_detail(self, url: str) -> tuple[str | None, ProductPrices | None]:
+    async def fetch_product_detail(
+        self, url: str
+    ) -> tuple[str | None, ProductPrices | None, str | None]:
         html, error = await self.fetch_product_detail_html(url)
         if not html:
             if error:
                 logger.info("Playwright no obtuvo detalle (%s): %s", url, error)
-            return None, None
-        return parse_product_description(html), parse_detail_prices(html)
+            return None, None, None
+        return (
+            parse_product_description(html),
+            parse_detail_prices(html),
+            parse_product_image(html),
+        )

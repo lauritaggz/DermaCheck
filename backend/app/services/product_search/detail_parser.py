@@ -8,6 +8,7 @@ from typing import Literal
 from bs4 import BeautifulSoup
 
 from app.schemas.product_search import ProductPrices
+from app.services.product_search.parsers import normalize_farmacompara_url
 
 logger = logging.getLogger(__name__)
 
@@ -86,5 +87,67 @@ def parse_product_description(html: str) -> str | None:
             content = str(tag["content"]).strip()
             if content and not content.lower().startswith("compara precios"):
                 return content
+
+    return None
+
+
+def _extract_json_ld_image(item: dict) -> str | None:
+    image = item.get("image")
+    if isinstance(image, str) and image.strip():
+        return image.strip()
+    if isinstance(image, list):
+        for entry in image:
+            if isinstance(entry, str) and entry.strip():
+                return entry.strip()
+            if isinstance(entry, dict):
+                url = entry.get("url") or entry.get("contentUrl")
+                if isinstance(url, str) and url.strip():
+                    return url.strip()
+    if isinstance(image, dict):
+        url = image.get("url") or image.get("contentUrl")
+        if isinstance(url, str) and url.strip():
+            return url.strip()
+    return None
+
+
+def parse_product_image(html: str) -> str | None:
+    """
+    Obtiene la URL de imagen desde la página de detalle de Farmacompara.
+
+    Orden de prioridad:
+      1. JSON-LD Product.image
+      2. meta og:image
+      3. img.product-img / .product-contain img
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    for script in soup.select('script[type="application/ld+json"]'):
+        raw = script.string or script.get_text()
+        if not raw:
+            continue
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+
+        candidates = payload if isinstance(payload, list) else [payload]
+        for item in candidates:
+            if not isinstance(item, dict):
+                continue
+            if item.get("@type") == "Product":
+                image = _extract_json_ld_image(item)
+                if image:
+                    return normalize_farmacompara_url(image)
+
+    og_image = soup.select_one('meta[property="og:image"]')
+    if og_image and og_image.get("content"):
+        content = str(og_image["content"]).strip()
+        if content:
+            return normalize_farmacompara_url(content)
+
+    img = soup.select_one("img.product-img") or soup.select_one(".product-contain img")
+    if img:
+        raw_src = img.get("src") or img.get("data-src") or img.get("data-lazy-src")
+        return normalize_farmacompara_url(str(raw_src) if raw_src else None)
 
     return None

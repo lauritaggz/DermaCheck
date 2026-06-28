@@ -14,6 +14,7 @@ export interface ProductSearchItem {
   minPriceLabel: string;
   minPharmacy: 'ahumada' | 'salcobrand' | 'cruz_verde' | null;
   description: string | null;
+  imageUrl?: string | null;
   url?: string;
 }
 
@@ -30,6 +31,8 @@ export interface ProductSearchApiItem {
   precio_minimo?: number | string | null;
   price?: number | string | null;
   descripcion?: string | null;
+  imagen_url?: string | null;
+  image_url?: string | null;
   url?: string;
 }
 

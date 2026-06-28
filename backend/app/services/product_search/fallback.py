@@ -91,6 +91,7 @@ def _item_from_dict(data: dict) -> ProductSearchItem:
         farmacia_minimo=data["farmacia_minimo"],
         url=data["url"],
         descripcion=data.get("descripcion"),
+        imagen_url=data.get("imagen_url"),
         fecha_consulta=date.today(),
     )
 

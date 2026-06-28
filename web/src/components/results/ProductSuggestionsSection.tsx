@@ -25,7 +25,7 @@ export function ProductSuggestionsSection({
         <h2 className="text-xl font-bold text-brand-900">Productos sugeridos</h2>
         <p className="text-sm text-textSecondary">
           {multipleConditions
-            ? 'Búsqueda por componentes de cada hallazgo · Hasta 3 productos · Orientación cosmética'
+            ? 'Búsqueda por componentes de cada hallazgo · Hasta 4 productos · Orientación cosmética'
             : 'Productos relacionados con tus recomendaciones — orientación cosmética, no prescripción médica'}
         </p>
       </div>

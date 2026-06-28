@@ -172,6 +172,7 @@ export interface SuggestedProduct {
   id: string;
   nombre: string;
   descripcion?: string | null;
+  imagen_url?: string | null;
   precios: ProductPriceMap;
   precio_minimo?: number | null;
   farmacia_minimo?: 'ahumada' | 'salcobrand' | 'cruz_verde' | null;
