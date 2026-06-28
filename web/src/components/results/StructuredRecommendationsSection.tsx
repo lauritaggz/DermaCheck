@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { DetectedCondition, Recommendation, SuggestedIngredientDetail } from '../../types';
 import {
   collectSources,
@@ -5,6 +7,24 @@ import {
   getRecommendationDisplayLabel,
   sortRecommendationsByDetectedConditions,
 } from '../../utils/recommendationMatcher';
+import { scrollToStableViewAfterExpand } from '../../utils/scrollAnchor';
+import { ExpandToggleButton } from './ExpandToggleButton';
+
+const routineStagger = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+  },
+};
+
+const routineItem = {
+  initial: { opacity: 0, y: 14 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.28, ease: 'easeOut' as const },
+  },
+};
 
 interface Props {
   recommendations: Recommendation[];
@@ -167,6 +187,9 @@ export function StructuredRecommendationsSection({
   recommendations,
   detectedConditions = [],
 }: Props) {
+  const [expanded, setExpanded] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
   if (recommendations.length === 0) return null;
 
   const orderedRecommendations = sortRecommendationsByDetectedConditions(
@@ -178,42 +201,76 @@ export function StructuredRecommendationsSection({
   const sources = collectSources(recommendations);
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div ref={sectionRef} className="surface-card p-5 scroll-mt-24">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-brand-900">Rutina sugerida</h2>
-        <p className="text-sm text-textSecondary">
-          {multipleFindings
-            ? 'Cada bloque corresponde a un hallazgo detectado · No es prescripción médica'
-            : 'Orientación educativa basada en tu hallazgo · No es prescripción médica'}
-        </p>
+        <ExpandToggleButton
+          expanded={expanded}
+          onToggle={() => setExpanded((value) => !value)}
+          scrollAnchorRef={sectionRef}
+        />
       </div>
 
-      <SourceAttribution sources={sources} />
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="routine-content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.32, ease: 'easeInOut' }}
+            className="overflow-hidden"
+            onAnimationComplete={() => {
+              if (expanded && sectionRef.current) {
+                scrollToStableViewAfterExpand(sectionRef.current);
+              }
+            }}
+          >
+            <motion.div
+              className="space-y-5 pt-5"
+              variants={routineStagger}
+              initial="initial"
+              animate="animate"
+            >
+              <motion.p variants={routineItem} className="text-sm text-textSecondary">
+                {multipleFindings
+                  ? 'Cada bloque corresponde a un hallazgo detectado · No es prescripción médica'
+                  : 'Orientación educativa basada en tu hallazgo · No es prescripción médica'}
+              </motion.p>
 
-      <div className="space-y-4">
-        {orderedRecommendations.map((rec, i) => (
-          <ConditionRecommendationBlock
-            key={rec.id}
-            rec={rec}
-            index={i + 1}
-            label={getRecommendationDisplayLabel(rec, detectedConditions)}
-          />
-        ))}
-      </div>
+              <motion.div variants={routineItem}>
+                <SourceAttribution sources={sources} />
+              </motion.div>
 
-      {whenToConsult.length > 0 && (
-        <div className="surface-card p-5 border-l-4 border-l-amber-400">
-          <h3 className="font-bold text-brand-900 mb-3">Cuándo consultar a un dermatólogo</h3>
-          <ul className="space-y-1.5">
-            {whenToConsult.map((item) => (
-              <li key={item} className="text-sm text-textSecondary flex gap-2">
-                <span className="text-amber-600" aria-hidden="true">!</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+              <div className="space-y-4">
+                {orderedRecommendations.map((rec, i) => (
+                  <motion.div key={rec.id} variants={routineItem}>
+                    <ConditionRecommendationBlock
+                      rec={rec}
+                      index={i + 1}
+                      label={getRecommendationDisplayLabel(rec, detectedConditions)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+
+              {whenToConsult.length > 0 && (
+                <motion.div variants={routineItem} className="surface-card p-5 border-l-4 border-l-amber-400">
+                  <h3 className="font-bold text-brand-900 mb-3">Cuándo consultar a un dermatólogo</h3>
+                  <ul className="space-y-1.5">
+                    {whenToConsult.map((item) => (
+                      <li key={item} className="text-sm text-textSecondary flex gap-2">
+                        <span className="text-amber-600" aria-hidden="true">!</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

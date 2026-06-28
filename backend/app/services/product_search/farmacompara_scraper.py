@@ -6,7 +6,11 @@ from urllib.parse import quote
 import httpx
 
 from app.schemas.product_search import ProductPrices
-from app.services.product_search.detail_parser import parse_detail_prices, parse_product_description
+from app.services.product_search.detail_parser import (
+    parse_detail_prices,
+    parse_product_description,
+    parse_product_image,
+)
 from app.services.product_search.parsers import parse_farmacompara_html
 
 logger = logging.getLogger(__name__)
@@ -120,13 +124,16 @@ class FarmacomparaHttpScraper:
 
         return response.text, response.status_code, None
 
-    async def fetch_product_detail(self, url: str) -> tuple[str | None, ProductPrices | None]:
+    async def fetch_product_detail(
+        self, url: str
+    ) -> tuple[str | None, ProductPrices | None, str | None]:
         html, _, error = await self.fetch_page_html(url)
         if not html:
             if error:
                 logger.info("No se pudo obtener detalle de producto (%s): %s", url, error)
-            return None, None
+            return None, None, None
 
         description = parse_product_description(html)
         detail_prices = parse_detail_prices(html)
-        return description, detail_prices
+        image_url = parse_product_image(html)
+        return description, detail_prices, image_url

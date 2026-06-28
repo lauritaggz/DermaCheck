@@ -5,6 +5,8 @@ backend/dermacheck.db
 backend/*.db
 backend/venv/
 backend/uploads/
+# Imágenes de entrenamiento (consentimiento) y cola temporal de jobs — solo runtime local
+backend/storage/
 # Pesos YOLO locales (no versionar): best.pt + HU17 best_wrinkle_yolov8m.pt
 backend/ml_models/*.pt
 backend/ml_models/best_wrinkle_yolov8m.pt

@@ -8,25 +8,48 @@ const EXAMPLE_QUERY = 'limpiador facial gel ácido salicílico niacinamida';
 const PHARMACY_KEYS = ['ahumada', 'salcobrand', 'cruz_verde'] as const;
 
 function ProductResultRow({ item }: { item: ProductSearchItem }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(item.imageUrl) && !imageFailed;
+
   return (
     <article className="surface-card p-4 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-brand-900 text-sm sm:text-base">{item.name}</h3>
-          {item.description && (
-            <p className="text-xs text-textSecondary mt-2 leading-relaxed line-clamp-3">{item.description}</p>
+      <div className="flex gap-3">
+        {showImage ? (
+          <img
+            src={item.imageUrl ?? undefined}
+            alt={item.name}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImageFailed(true)}
+            className="w-16 h-16 rounded-lg border border-slate-200 bg-white object-contain p-1 shrink-0"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-lg border border-slate-200 bg-brand-50 flex items-center justify-center shrink-0">
+            <svg className="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 min-w-0 flex-1">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-brand-900 text-sm sm:text-base">{item.name}</h3>
+            {item.description && (
+              <p className="text-xs text-textSecondary mt-2 leading-relaxed line-clamp-3">{item.description}</p>
+            )}
+          </div>
+          {item.url && (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold px-3 py-2 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors shrink-0 self-start"
+            >
+              Ver en Farmacompara
+            </a>
           )}
         </div>
-        {item.url && (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold px-3 py-2 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors shrink-0 self-start"
-          >
-            Ver en Farmacompara
-          </a>
-        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

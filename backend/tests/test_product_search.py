@@ -6,7 +6,11 @@ from app.services.product_search.filters import (
     normalize_query,
 )
 from app.schemas.product_search import ProductPrices
-from app.services.product_search.detail_parser import parse_detail_prices, parse_product_description
+from app.services.product_search.detail_parser import (
+    parse_detail_prices,
+    parse_product_description,
+    parse_product_image,
+)
 from app.services.product_search.parsers import (
     compute_min_price,
     merge_precios,
@@ -22,14 +26,21 @@ DETAIL_HTML = """
 </div>
 <div class="product-contain p-3">
   <p>Loción hidratante de 473 ml con ceramidas y ácido hialurónico para piel seca.</p>
+  <img src="https://www.farmacompara.cl/img/producto-detalle.png" class="product-img" alt="Loción">
 </div>
 <script type="application/ld+json">
-{"@context":"https://schema.org/","@type":"Product","description":"Desde JSON-LD"}
+{"@context":"https://schema.org/","@type":"Product","description":"Desde JSON-LD","image":"https://static.example.cl/product.jpg"}
 </script>
+<meta property="og:image" content="https://static.example.cl/og-product.jpg">
 """
 
 SAMPLE_HTML = """
 <div class="prod" data-id="1" data-price="8990" data-name="Limpiador Facial Gel 200 mL">
+  <div class="img-container">
+    <a href="https://www.farmacompara.cl/producto/limpiador-facial" class="product-name">
+      <img src="https://www.farmacompara.cl/img/limpiador.png" class="product-img" alt="Limpiador Facial Gel 200 mL">
+    </a>
+  </div>
   <a href="https://www.farmacompara.cl/producto/limpiador-facial" class="product-name">Limpiador Facial Gel 200 mL</a>
   <div class="price-comparison">
     <div class="price-row"><span class="pharmacy-name">Ahumada</span><span class="price-value">$8.990</span></div>
@@ -60,6 +71,7 @@ def test_parse_farmacompara_html():
     assert products[0].precios.ahumada == 8990
     assert products[0].precios.salcobrand == 9390
     assert products[0].precios.cruz_verde is None
+    assert products[0].imagen_url == "https://www.farmacompara.cl/img/limpiador.png"
     assert products[0].fecha_consulta == date.today()
 
 
@@ -96,3 +108,8 @@ def test_parse_product_description_and_detail_prices():
     assert detail_prices.ahumada is None
     assert detail_prices.salcobrand == 9390
     assert detail_prices.cruz_verde == 9490
+
+
+def test_parse_product_image():
+    image = parse_product_image(DETAIL_HTML)
+    assert image == "https://static.example.cl/product.jpg"

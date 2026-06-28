@@ -23,6 +23,7 @@ class ProductSearchItem(BaseModel):
     farmacia_minimo: Literal["ahumada", "salcobrand", "cruz_verde"]
     url: str
     descripcion: str | None = None
+    imagen_url: str | None = None
     fecha_consulta: date
 
 

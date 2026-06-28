@@ -53,6 +53,7 @@ function normalizeItem(raw: ProductSearchApiItem, index: number): ProductSearchI
     minPriceLabel: label,
     minPharmacy: raw.farmacia_minimo ?? null,
     description: raw.descripcion ?? null,
+    imageUrl: raw.imagen_url ?? raw.image_url ?? null,
     url: raw.url,
   };
 }

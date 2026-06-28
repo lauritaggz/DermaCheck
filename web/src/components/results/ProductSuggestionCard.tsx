@@ -1,6 +1,10 @@
+import { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { formatPrice } from '../../services/productSearchService';
 import type { SuggestedProduct } from '../../types';
 import { PHARMACY_LABELS } from '../../types/productSearch';
+import { ExpandToggleButton } from './ExpandToggleButton';
+import { scrollToStableViewAfterExpand } from '../../utils/scrollAnchor';
 
 interface Props {
   product: SuggestedProduct;
@@ -15,63 +19,112 @@ function formatConsultationDate(value?: string): string | null {
   return parsed.toLocaleDateString('es-CL');
 }
 
+function ProductImagePlaceholder() {
+  return (
+    <div
+      className="w-full aspect-[4/3] rounded-xl border border-slate-200 bg-brand-50 flex items-center justify-center"
+      aria-hidden="true"
+    >
+      <svg className="w-12 h-12 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export function ProductSuggestionCard({ product }: Props) {
+  const cardRef = useRef<HTMLElement>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const consultationDate = formatConsultationDate(product.fecha_consulta);
   const cheapestPharmacy = product.farmacia_minimo;
   const cheapestLabel = cheapestPharmacy ? PHARMACY_LABELS[cheapestPharmacy] : null;
   const cheapestPrice = cheapestPharmacy ? product.precios[cheapestPharmacy] : product.precio_minimo;
   const { label: cheapestPriceLabel } = formatPrice(cheapestPrice ?? null);
+  const showImage = Boolean(product.imagen_url) && !imageFailed;
+  const hasLongDescription = Boolean(product.descripcion && product.descripcion.length > 120);
+  const matchedTags = [
+    ...(product.matchedConditions ?? []).map((label) => ({ key: `c-${label}`, label, kind: 'condition' as const })),
+    ...(product.matchedIngredients ?? []).map((label) => ({ key: `i-${label}`, label, kind: 'ingredient' as const })),
+  ];
 
   return (
-    <article className="surface-card surface-card-hover p-5 space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-bold text-brand-900 text-sm sm:text-base">{product.nombre}</h3>
-          {product.descripcion && (
-            <p className="text-xs text-textSecondary mt-2 leading-relaxed line-clamp-3">
-              {product.descripcion}
-            </p>
-          )}
-        </div>
-        {cheapestLabel && cheapestPrice != null && (
-          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-100 text-teal-700 border border-teal-200 shrink-0">
-            Más económico
-          </span>
+    <article ref={cardRef} className="surface-card surface-card-hover p-5 space-y-4 scroll-mt-24">
+      <div>
+        <h3 className="font-bold text-brand-900 text-sm sm:text-base leading-snug">{product.nombre}</h3>
+        {product.descripcion && (
+          <div className="mt-2">
+            <motion.div
+              initial={false}
+              animate={{
+                height: descriptionExpanded ? 'auto' : '2.75rem',
+                opacity: descriptionExpanded ? 1 : 0.92,
+              }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+              onAnimationComplete={() => {
+                if (descriptionExpanded && cardRef.current) {
+                  scrollToStableViewAfterExpand(cardRef.current);
+                }
+              }}
+            >
+              <p className="text-xs text-textSecondary leading-relaxed">
+                {product.descripcion}
+              </p>
+            </motion.div>
+            {hasLongDescription && (
+              <ExpandToggleButton
+                expanded={descriptionExpanded}
+                onToggle={() => setDescriptionExpanded((expanded) => !expanded)}
+                scrollAnchorRef={cardRef}
+                className="mt-1.5"
+              />
+            )}
+          </div>
         )}
       </div>
 
-      {product.matchedConditions && product.matchedConditions.length > 0 && (
+      {matchedTags.length > 0 && (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700 mb-1.5">
             Relacionado con
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {product.matchedConditions.map((condition) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {matchedTags.map(({ key, label, kind }) => (
               <span
-                key={condition}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200"
+                key={key}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  kind === 'condition'
+                    ? 'bg-teal-50 text-teal-800 border-teal-200'
+                    : 'bg-brand-50 text-brand-700 border-brand-200'
+                }`}
               >
-                {condition}
+                {label}
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {product.matchedIngredients && product.matchedIngredients.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {product.matchedIngredients.map((ingredient) => (
-            <span
-              key={ingredient}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200"
-            >
-              {ingredient}
-            </span>
-          ))}
-        </div>
+      {showImage ? (
+        <img
+          src={product.imagen_url ?? undefined}
+          alt={product.nombre}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImageFailed(true)}
+          className="w-full aspect-[4/3] rounded-xl border border-slate-200 bg-white object-contain p-3"
+        />
+      ) : (
+        <ProductImagePlaceholder />
       )}
 
-      {cheapestLabel && (
+      {cheapestLabel && cheapestPrice != null && (
         <p className="text-sm font-semibold text-brand-800">
           Más económico: {cheapestPriceLabel} en {cheapestLabel}
         </p>

@@ -121,12 +121,19 @@ class ProductSearchService:
             return product
 
         async with semaphore:
-            descripcion, detail_prices = await self._http_scraper.fetch_product_detail(product.url)
+            descripcion, detail_prices, detail_image = await self._http_scraper.fetch_product_detail(
+                product.url
+            )
 
             if not descripcion and settings.product_search_enable_playwright:
-                descripcion, pw_prices = await self._playwright_scraper.fetch_product_detail(product.url)
+                pw_desc, pw_prices, pw_image = await self._playwright_scraper.fetch_product_detail(
+                    product.url
+                )
+                descripcion = descripcion or pw_desc
                 detail_prices = detail_prices or pw_prices
+                detail_image = detail_image or pw_image
 
+        imagen_url = product.imagen_url or detail_image
         merged_precios = merge_precios(product.precios, detail_prices)
         min_data = compute_min_price(merged_precios)
 
@@ -136,6 +143,7 @@ class ProductSearchService:
                 update={
                     "precios": merged_precios,
                     "descripcion": descripcion,
+                    "imagen_url": imagen_url,
                 }
             )
 
@@ -150,6 +158,7 @@ class ProductSearchService:
                 "precio_minimo": precio_minimo,
                 "farmacia_minimo": farmacia_minimo,
                 "descripcion": descripcion,
+                "imagen_url": imagen_url,
             }
         )
 

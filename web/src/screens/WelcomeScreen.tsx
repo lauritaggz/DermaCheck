@@ -138,49 +138,52 @@ function BenefitCard({
   );
 }
 
-function TotemMockup() {
+const LANDING_HERO_IMAGE = '/landing-kiosk-hero.png';
+
+function HeroVisual() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.3, duration: 0.6 }}
-      className="relative mx-auto w-full max-w-xs sm:max-w-sm"
+      initial={{ opacity: 0, scale: 0.96, y: 16 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay: 0.25, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="relative mx-auto w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-none lg:mx-0 lg:w-full"
     >
-      {/* Pedestal / marco tótem */}
-      <div className="rounded-[2rem] bg-gradient-to-b from-slate-700 to-slate-900 p-3 shadow-elevated">
-        <div className="rounded-[1.5rem] bg-slate-950 p-2">
-          {/* Pantalla */}
-          <div className="relative rounded-2xl overflow-hidden bg-hero-gradient aspect-[3/4]">
-            <div className="absolute inset-0 dot-pattern opacity-30" aria-hidden="true" />
-            {/* Marco facial simulado */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-              <div className="relative w-36 h-44 sm:w-40 sm:h-48 rounded-[50%] border-2 border-white/30 scan-corners">
-                <div className="scan-line-overlay" aria-hidden="true" />
-                <div className="absolute inset-4 rounded-[50%] bg-white/10 backdrop-blur-sm" />
-              </div>
-              <p className="mt-5 text-white/90 text-xs font-semibold text-center">
-                Análisis facial en curso…
-              </p>
-              <div className="mt-3 flex gap-2">
-                {['Acné', 'Manchas', 'Rosácea'].map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 rounded-full bg-white/20 text-white/80 backdrop-blur normal-case"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Base del tótem */}
-        <div className="mx-auto mt-2 w-24 h-3 rounded-full bg-slate-600" />
+      <div
+        className="absolute -inset-6 rounded-[2.5rem] bg-white/10 blur-3xl"
+        aria-hidden="true"
+      />
+      <div className="relative rounded-[1.75rem] overflow-hidden shadow-elevated ring-1 ring-white/25">
+        <img
+          src={LANDING_HERO_IMAGE}
+          alt="Cliente usando el tótem DermaCheck en una farmacia con captura facial guiada en pantalla"
+          className="block w-full aspect-[3/4] object-cover object-center"
+          width={640}
+          height={853}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-brand-900/50 via-brand-900/10 to-transparent pointer-events-none"
+          aria-hidden="true"
+        />
       </div>
-      {/* Badge flotante */}
-      <div className="absolute -right-2 top-8 surface-card px-3 py-2 shadow-elevated text-xs font-semibold text-brand-700 hidden sm:block">
+      <motion.div
+        initial={{ opacity: 0, x: 12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.55, duration: 0.4 }}
+        className="absolute -right-1 sm:-right-3 top-6 surface-card px-3 py-2 shadow-elevated text-xs font-semibold text-brand-700 hidden sm:block"
+      >
         ✓ Listo en segundos
-      </div>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.65, duration: 0.4 }}
+        className="absolute -left-1 sm:-left-3 bottom-20 surface-card px-3 py-2 shadow-elevated text-xs font-semibold text-teal-700 hidden sm:block normal-case"
+      >
+        Tótem en punto físico
+      </motion.div>
     </motion.div>
   );
 }
@@ -238,7 +241,7 @@ export function WelcomeScreen() {
             <div className="absolute inset-0 dot-pattern opacity-20" aria-hidden="true" />
             <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl" aria-hidden="true" />
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 relative">
-              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 xl:gap-14 items-center">
                 <div>
                   <motion.div
                     initial={{ opacity: 0, y: 16 }}
@@ -278,7 +281,7 @@ export function WelcomeScreen() {
                     </p>
                   </motion.div>
                 </div>
-                <TotemMockup />
+                <HeroVisual />
               </div>
             </div>
           </section>
