@@ -1,5 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Variables de entorno con credenciales (no versionar)
+/.env
+.env.local
+
 # Backend Python
 backend/dermacheck.db
 backend/*.db
@@ -15,6 +19,9 @@ backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
 
+#llave de acceso al servidor de produccion
+dermacheck.pem
+
 # Web app (Vite + React)
 web/dist/
 web/node_modules/
@@ -28,6 +35,18 @@ deploy/production/data/mysql/*
 !deploy/production/data/mysql/.gitkeep
 deploy/production/data/uploads/*
 !deploy/production/data/uploads/.gitkeep
+
+# EC2
+deploy/ec2/.env
+deploy/ec2/.env.*
+deploy/ec2/data/mysql/*
+!deploy/ec2/data/mysql/.gitkeep
+deploy/ec2/data/uploads/*
+!deploy/ec2/data/uploads/.gitkeep
+deploy/ec2/data/storage/*
+!deploy/ec2/data/storage/.gitkeep
+deploy/ec2/certs/*
+!deploy/ec2/certs/.gitkeep
 
 # macOS
 .DS_Store

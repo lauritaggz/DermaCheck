@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Navegador Chromium + dependencias del sistema para el scraper de productos (Playwright)
+RUN playwright install --with-deps chromium
+
 COPY app ./app
 COPY ml_models ./ml_models
 
