@@ -50,7 +50,6 @@ def _submit_job(client: TestClient, test_user, sample_image, session_id: str):
         "/api/v1/analysis/jobs",
         data={
             "user_id": str(test_user.id),
-            "conf": "0.25",
             **_consent_form(allow_training=False, session_id=session_id),
         },
         files={"face_image": ("face.jpg", sample_image, "image/jpeg")},
@@ -172,7 +171,6 @@ class TestAnalysisJobQueue:
             "/api/v1/analysis/jobs",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "false",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",

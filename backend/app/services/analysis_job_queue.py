@@ -17,6 +17,7 @@ from fastapi import HTTPException, status
 
 from app.config import settings
 from app.database import SessionLocal
+from app.services.inference_thresholds import get_inference_thresholds
 from app.services.analysis_execution_service import (
     execute_combined_double,
     execute_combined_single,
@@ -131,8 +132,6 @@ class AnalysisJobQueue:
         *,
         user_id: int,
         consent_ctx: AnalysisConsentContext,
-        conf: float,
-        expression_lines_conf: float | None,
         mode: JobMode,
         image_contents: list[bytes],
     ) -> JobRecord:
@@ -154,14 +153,15 @@ class AnalysisJobQueue:
             path.write_bytes(content)
             image_paths.append(path)
 
+        thresholds = get_inference_thresholds()
         record = JobRecord(
             job_id=job_id,
             status="queued",
             created_at=datetime.now(timezone.utc),
             user_id=user_id,
             consent_ctx=consent_ctx,
-            conf=conf,
-            expression_lines_conf=expression_lines_conf,
+            conf=thresholds.derm_conf,
+            expression_lines_conf=thresholds.expression_lines_conf,
             mode=mode,
             image_paths=image_paths,
         )
@@ -175,8 +175,6 @@ class AnalysisJobQueue:
         *,
         user_id: int,
         consent_ctx: AnalysisConsentContext,
-        conf: float,
-        expression_lines_conf: float | None,
         mode: JobMode,
         image_contents: list[bytes],
     ) -> dict[str, Any]:
@@ -184,8 +182,6 @@ class AnalysisJobQueue:
         record = await self.enqueue(
             user_id=user_id,
             consent_ctx=consent_ctx,
-            conf=conf,
-            expression_lines_conf=expression_lines_conf,
             mode=mode,
             image_contents=image_contents,
         )
@@ -244,8 +240,6 @@ class AnalysisJobQueue:
                     content=content,
                     user_id=record.user_id,
                     consent_ctx=record.consent_ctx,
-                    conf=record.conf,
-                    expression_lines_conf=record.expression_lines_conf,
                     db=db,
                 )
             content_1 = record.image_paths[0].read_bytes()
@@ -255,7 +249,6 @@ class AnalysisJobQueue:
                 content_2=content_2,
                 user_id=record.user_id,
                 consent_ctx=record.consent_ctx,
-                conf=record.conf,
                 db=db,
             )
         finally:

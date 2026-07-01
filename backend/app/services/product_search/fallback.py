@@ -31,6 +31,7 @@ FALLBACK_PRODUCTS: list[dict] = [
             "precio_minimo": 7990,
             "farmacia_minimo": "ahumada",
             "url": "https://www.farmacompara.cl/search?q=crema+hidratante+facial",
+            "descripcion": "Crema hidratante facial con urea al 5% para piel seca o con resequedad leve. Emoliente de apoyo cosmético.",
         },
     },
     {

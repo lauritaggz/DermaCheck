@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.config import settings
 from app.database import get_db
 from app.main import app
 from app.models import AppUser, Base, SkinAnalysis, TrainingImageRecord
@@ -132,7 +133,7 @@ class TestAnalysisInferenceEndpoint:
         """Test: Inferencia exitosa con imagen válida."""
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.jpg", sample_image, "image/jpeg")},
         )
 
@@ -158,7 +159,7 @@ class TestAnalysisInferenceEndpoint:
         
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.pdf", fake_file, "application/pdf")},
         )
 
@@ -171,7 +172,7 @@ class TestAnalysisInferenceEndpoint:
         
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("empty.jpg", empty_file, "image/jpeg")},
         )
 
@@ -186,7 +187,7 @@ class TestAnalysisInferenceEndpoint:
         
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("large.jpg", large_file, "image/jpeg")},
         )
 
@@ -197,14 +198,14 @@ class TestAnalysisFullEndpoint:
     """Pruebas para el endpoint /api/v1/analysis/face-analyze"""
 
     def test_face_analyze_success(
-        self, client: TestClient, test_user: AppUser, sample_image, test_db: Session
+        self, client: TestClient, test_user: AppUser, sample_image, test_db: Session, monkeypatch
     ):
         """Test: Análisis completo exitoso con registro en DB."""
+        monkeypatch.setattr(settings, "derm_conf_threshold", 0.30)
         response = client.post(
             "/api/v1/analysis/face-analyze",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.30",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -262,7 +263,6 @@ class TestAnalysisFullEndpoint:
             "/api/v1/analysis/face-analyze",
             data={
                 "user_id": "999",
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -281,7 +281,6 @@ class TestAnalysisFullEndpoint:
             "/api/v1/analysis/face-analyze",
             data={
                 "user_id": "invalid",
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -328,7 +327,6 @@ class TestAnalysisDoubleEndpoint:
             "/api/v1/analysis/face-analyze-total-double",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -360,7 +358,6 @@ class TestAnalysisDoubleEndpoint:
             "/api/v1/analysis/face-analyze-total-double",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -380,7 +377,6 @@ class TestAnalysisDoubleEndpoint:
             "/api/v1/analysis/face-analyze-total-double",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -404,7 +400,7 @@ class TestDetectionValidation:
         """Test: Cada detección tiene la estructura correcta."""
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.jpg", sample_image, "image/jpeg")},
         )
 
@@ -442,7 +438,7 @@ class TestPerformance:
         """Test: El tiempo de procesamiento es aceptable (< 5 segundos)."""
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.jpg", sample_image, "image/jpeg")},
         )
 
@@ -469,7 +465,7 @@ class TestErrorHandling:
         
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.jpg", sample_image, "image/jpeg")},
         )
 
@@ -484,7 +480,7 @@ class TestErrorHandling:
         
         response = client.post(
             "/api/v1/analysis/inference",
-            data={"user_id": "1", "conf": "0.25"},
+            data={"user_id": "1"},
             files={"file": ("test.jpg", sample_image, "image/jpeg")},
         )
 
@@ -555,7 +551,6 @@ class TestKioskConsentStorage:
             "/api/v1/analysis/face-analyze-total",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 **_consent_form(allow_training=False),
             },
             files={"face_image": ("face.jpg", sample_image, "image/jpeg")},
@@ -590,7 +585,6 @@ class TestKioskConsentStorage:
             "/api/v1/analysis/face-analyze-total",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 **_consent_form(allow_training=True, session_id=session_id),
             },
             files={"face_image": ("face.jpg", sample_image, "image/jpeg")},
@@ -623,7 +617,6 @@ class TestKioskConsentStorage:
             "/api/v1/analysis/face-analyze-total",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "false",
                 "privacy_accepted": "true",
                 "allow_training_storage": "false",
@@ -644,7 +637,6 @@ class TestKioskConsentStorage:
             "/api/v1/analysis/face-analyze-total",
             data={
                 "user_id": str(test_user.id),
-                "conf": "0.25",
                 "consent_accepted": "true",
                 "privacy_accepted": "false",
                 "allow_training_storage": "false",
@@ -671,7 +663,6 @@ class TestKioskConsentStorage:
         session_id = "sess-dedupe-001"
         form = {
             "user_id": str(test_user.id),
-            "conf": "0.25",
             **_consent_form(allow_training=True, session_id=session_id),
         }
         files = {"face_image": ("face.jpg", sample_image, "image/jpeg")}

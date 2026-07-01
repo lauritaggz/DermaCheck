@@ -11,6 +11,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from app.services.inference_thresholds import get_inference_thresholds
+
 _MODEL: Any | None = None
 _MODEL_LOCK = threading.Lock()
 
@@ -37,12 +39,13 @@ def _get_model():
     return _MODEL
 
 
-def run_inference(image_bytes: bytes, conf: float = 0.25) -> list[dict]:
+def run_inference(image_bytes: bytes, conf: float | None = None) -> list[dict]:
     from PIL import Image  # import diferido (pillow puede no estar instalado al arranque)
 
+    effective_conf = conf if conf is not None else get_inference_thresholds().derm_conf
     model = _get_model()
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    results = model(image, conf=conf, verbose=False)
+    results = model(image, conf=effective_conf, verbose=False)
 
     detections: list[dict] = []
     for r in results:

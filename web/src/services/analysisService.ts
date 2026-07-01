@@ -18,14 +18,11 @@ interface AnalysisResponse {
 export const analysisService = {
   /**
    * Envía una imagen al backend para análisis con el modelo YOLO.
-   * @param imageBlob - Blob de la imagen
-   * @param userId - ID del usuario
-   * @param confidenceThreshold - Umbral de confianza (default: 0.25)
+   * El umbral de confianza lo resuelve el servidor (DERMACHECK_DERM_CONF).
    */
   async analyzeImage(
     imageBlob: Blob,
     userId: string,
-    confidenceThreshold: number = 0.25
   ): Promise<{ data: AnalysisResponse } | { error: string }> {
     if (!isApiAvailable()) {
       return { error: 'No hay servidor de análisis configurado. Verifica VITE_API_BASE_URL en .env' };
@@ -37,7 +34,6 @@ export const analysisService = {
       const formData = new FormData();
       formData.append('file', imageBlob, 'capture.jpg');
       formData.append('user_id', userId);
-      formData.append('conf', confidenceThreshold.toString());
 
       const res = await fetch(url, {
         method: 'POST',

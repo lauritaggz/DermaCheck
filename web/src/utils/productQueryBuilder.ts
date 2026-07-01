@@ -76,7 +76,8 @@ export function dedupeQueries(queries: string[]): string[] {
  * Convierte un componente dermatocosmético en una query corta para el scraper.
  */
 export function ingredientToScraperQuery(ingredient: string): string {
-  const key = normalizeTextForQuery(ingredient);
+  const withoutQualifier = ingredient.split('(')[0].trim();
+  const key = normalizeTextForQuery(withoutQualifier);
   const mapped = INGREDIENT_SCRAPER_QUERIES[key];
   if (mapped) return mapped;
 

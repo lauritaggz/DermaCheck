@@ -46,6 +46,7 @@ export interface ExpressionLinesResult {
   detected: boolean;
   count: number;
   average_confidence: number;
+  model_conf_threshold?: number;
   model_name?: string;
   task?: string;
   detections: ExpressionLinesDetection[];
@@ -258,4 +259,14 @@ export interface AuthCredentials {
 
 export interface RegisterPayload extends AuthCredentials {
   name: string;
+}
+
+export interface InferenceThresholdsConfig {
+  derm_conf: number;
+  expression_lines_conf: number;
+}
+
+export interface KioskConfig {
+  user_id: string;
+  inference_thresholds: InferenceThresholdsConfig;
 }
