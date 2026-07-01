@@ -96,13 +96,14 @@ PRODUCT_SEARCH_ENABLE_PLAYWRIGHT=true
 
 ## Configuración de inferencia
 
-Umbral de líneas de expresión (cuando el cliente no envía `expression_lines_conf`):
+Los umbrales de confianza YOLO se definen solo en el servidor (`app/config.py` vía `.env`). El cliente **no** puede enviarlos en formularios; se ignoran si llegaran por compatibilidad.
 
 ```env
+DERMACHECK_DERM_CONF=0.25
 DERMACHECK_EXPRESSION_LINES_CONF=0.65
 ```
 
-Definido en `app/config.py`; reinicia uvicorn tras cambiar `.env`.
+Tras cambiar `.env`, reinicia uvicorn (o el contenedor `api` en producción). Para verificar los valores activos: `GET /api/v1/kiosk/config` → `inference_thresholds`, o `model_conf_threshold` en la respuesta de análisis.
 
 ## Zona horaria
 
@@ -117,7 +118,7 @@ Usada en correos (`format_datetime_local`) y recomendada en Docker para logs coh
 | Método | Ruta | Uso |
 |--------|------|-----|
 | GET | `/health` | Salud del servicio |
-| GET | `/api/v1/kiosk/config` | User ID del tótem |
+| GET | `/api/v1/kiosk/config` | User ID del tótem y umbrales YOLO activos |
 | POST | `/api/v1/consents/accept` | Consentimiento tótem |
 | POST | `/api/v1/analysis/jobs` | Encolar análisis |
 | GET | `/api/v1/analysis/jobs/{id}` | Estado del job |

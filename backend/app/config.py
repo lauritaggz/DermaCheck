@@ -9,8 +9,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./dermacheck.db"
     api_prefix: str = "/api/v1"
 
-    # HU17: umbral YOLO para líneas de expresión (única fuente de verdad en backend).
-    # Sobrescribir con DERMACHECK_EXPRESSION_LINES_CONF en .env (valor entre 0.0 y 1.0).
+    # Umbrales YOLO — única fuente de verdad (sobrescribir en backend/.env).
+    derm_conf_threshold: float = Field(
+        default=0.25,
+        ge=0.0,
+        le=1.0,
+        validation_alias="DERMACHECK_DERM_CONF",
+    )
     expression_lines_conf_threshold: float = Field(
         default=0.65,
         ge=0.0,

@@ -11,6 +11,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from app.schemas.analysis import DetectionBox, InferenceResponse
 from app.services.inference_service import run_inference
+from app.services.inference_thresholds import get_inference_thresholds
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -22,7 +23,6 @@ MAX_BYTES = 12 * 1024 * 1024
 async def analyze_image(
     user_id: str = Form(...),
     file: UploadFile = File(...),
-    conf: float = Form(0.25),
 ) -> InferenceResponse:
     """
     Endpoint simplificado de inferencia: analiza una imagen sin guardarla.
@@ -46,7 +46,8 @@ async def analyze_image(
         )
 
     try:
-        detections_raw = run_inference(content, conf=conf)
+        thresholds = get_inference_thresholds()
+        detections_raw = run_inference(content, conf=thresholds.derm_conf)
     except FileNotFoundError as e:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -17,7 +17,7 @@ export function mapCombinedFacialAnalysis(
     user_id: payload.user_id,
     image: payload.image,
     analysis: {
-      model_conf_threshold: affections.analysis.model_conf_threshold ?? 0.25,
+      model_conf_threshold: affections.analysis.model_conf_threshold ?? 0,
       total_detections: affections.analysis.total_detections,
       detections: affections.analysis.detections ?? [],
       processing_time_ms:

@@ -85,14 +85,12 @@ export function ProcessingScreen() {
               imageBlob2: images[1].blob,
               userId,
               consent: consentPayload,
-              confidenceThreshold: 0.25,
               onQueueUpdate: handleQueueUpdate,
             })
           : await analyzeFaceImage({
               imageBlob: images[0].blob,
               userId,
               consent: consentPayload,
-              confidenceThreshold: 0.25,
               onQueueUpdate: handleQueueUpdate,
             });
 

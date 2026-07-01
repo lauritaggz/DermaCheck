@@ -22,6 +22,7 @@ from app.services.analysis_validation_service import (
     read_and_validate_image,
 )
 from app.services.consent_validation_service import validate_analysis_consent_fields
+from app.services.inference_thresholds import get_inference_thresholds
 from app.services.training_image_storage_service import (
     ephemeral_image_meta,
     save_training_image,
@@ -49,7 +50,6 @@ def _detected_condition_names(detections) -> list[str]:
 async def analyze_face_image(
     user_id: str = Form(...),
     face_image: UploadFile = File(...),
-    conf: float = Form(0.25),
     consent_accepted: str = Form(...),
     privacy_accepted: str = Form(...),
     allow_training_storage: str = Form("false"),
@@ -82,7 +82,8 @@ async def analyze_face_image(
     stored = False
 
     try:
-        detections = run_yolo_detections(content, conf=conf)
+        thresholds = get_inference_thresholds()
+        detections = run_yolo_detections(content, conf=thresholds.derm_conf)
         processing_time_ms = (time.perf_counter() - start_time) * 1000
         diagnosis = build_diagnosis(detections)
         condition_names = _detected_condition_names(detections)
@@ -115,7 +116,7 @@ async def analyze_face_image(
             user_id=str(n),
             image=image_meta,
             analysis={
-                "model_conf_threshold": conf,
+                "model_conf_threshold": thresholds.derm_conf,
                 "total_detections": len(detections),
                 "detections": [d.model_dump() for d in detections],
                 "processing_time_ms": processing_time_ms,
@@ -132,11 +133,6 @@ async def analyze_face_image(
 async def analyze_face_image_total(
     user_id: str = Form(...),
     face_image: UploadFile = File(...),
-    conf: float = Form(0.25, description="Umbral de confianza del modelo dermatológico"),
-    expression_lines_conf: float | None = Form(
-        default=None,
-        description="Opcional; si no se envía, usa app/config.py expression_lines_conf_threshold",
-    ),
     consent_accepted: str = Form(...),
     privacy_accepted: str = Form(...),
     allow_training_storage: str = Form("false"),
@@ -164,8 +160,6 @@ async def analyze_face_image_total(
     result = await analysis_job_queue.run_sync(
         user_id=n,
         consent_ctx=consent_ctx,
-        conf=conf,
-        expression_lines_conf=expression_lines_conf,
         mode="single",
         image_contents=[content],
     )
@@ -180,7 +174,6 @@ async def analyze_face_image_total_double(
     user_id: str = Form(...),
     face_image_1: UploadFile = File(...),
     face_image_2: UploadFile = File(...),
-    conf: float = Form(0.25, description="Umbral de confianza del modelo dermatológico"),
     consent_accepted: str = Form(...),
     privacy_accepted: str = Form(...),
     allow_training_storage: str = Form("false"),
@@ -226,8 +219,6 @@ async def analyze_face_image_total_double(
     result = await analysis_job_queue.run_sync(
         user_id=n,
         consent_ctx=consent_ctx,
-        conf=conf,
-        expression_lines_conf=None,
         mode="double",
         image_contents=[content_1, content_2],
     )
