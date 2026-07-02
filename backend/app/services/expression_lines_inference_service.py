@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from app.config import settings
+from app.services.inference_thresholds import get_inference_thresholds
 
 logger = logging.getLogger("dermacheck.expression_lines")
 
@@ -38,7 +38,7 @@ class ExpressionLinesInferenceService:
         self._default_conf = (
             default_conf
             if default_conf is not None
-            else settings.expression_lines_conf_threshold
+            else get_inference_thresholds().expression_lines_conf
         )
         self._model: Any | None = None
         self._lock = threading.Lock()
@@ -139,6 +139,7 @@ class ExpressionLinesInferenceService:
             "detected": count > 0,
             "count": count,
             "average_confidence": average_confidence,
+            "model_conf_threshold": threshold,
             "model_name": self.model_name,
             "task": TASK_NAME,
             "detections": detections,

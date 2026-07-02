@@ -21,6 +21,7 @@ from app.services.analysis_validation_service import (
     read_and_validate_image,
 )
 from app.services.consent_validation_service import validate_analysis_consent_fields
+from app.services.inference_thresholds import get_inference_thresholds
 
 router = APIRouter(prefix="/analysis", tags=["analysis-jobs"])
 
@@ -39,8 +40,6 @@ async def submit_analysis_job(
     face_image: UploadFile | None = File(default=None),
     face_image_1: UploadFile | None = File(default=None),
     face_image_2: UploadFile | None = File(default=None),
-    conf: float = Form(0.25),
-    expression_lines_conf: float | None = Form(default=None),
     consent_accepted: str = Form(...),
     privacy_accepted: str = Form(...),
     allow_training_storage: str = Form("false"),
@@ -81,8 +80,6 @@ async def submit_analysis_job(
         record = await analysis_job_queue.enqueue(
             user_id=n,
             consent_ctx=consent_ctx,
-            conf=conf,
-            expression_lines_conf=expression_lines_conf,
             mode="single",
             image_contents=[content],
         )
@@ -112,8 +109,6 @@ async def submit_analysis_job(
         record = await analysis_job_queue.enqueue(
             user_id=n,
             consent_ctx=consent_ctx,
-            conf=conf,
-            expression_lines_conf=None,
             mode="double",
             image_contents=[content_1, content_2],
         )

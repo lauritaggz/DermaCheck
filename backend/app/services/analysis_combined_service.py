@@ -15,7 +15,7 @@ from app.schemas.analysis import DetectionBox
 from app.schemas.diagnosis import DiagnosisResult
 from app.services.analysis_pipeline_service import build_diagnosis, run_yolo_detections
 from app.services.analysis_validation_service import read_and_validate_image
-from app.config import settings
+from app.services.inference_thresholds import get_inference_thresholds
 from app.services.expression_lines_inference_service import (
     TASK_NAME,
     expression_lines_inference_service,
@@ -49,9 +49,8 @@ def run_expression_lines_safe(
     image_bytes: bytes,
     conf: float | None = None,
 ) -> dict[str, Any]:
-    threshold = (
-        conf if conf is not None else settings.expression_lines_conf_threshold
-    )
+    thresholds = get_inference_thresholds()
+    threshold = conf if conf is not None else thresholds.expression_lines_conf
     """Ejecuta líneas de expresión; ante fallo devuelve payload degradado sin romper dermatología."""
     try:
         return expression_lines_inference_service.analyze_image(
@@ -149,31 +148,31 @@ def build_combined_diagnosis(
 def analyze_face_total(
     image_bytes: bytes,
     *,
-    derm_conf: float = 0.85,
+    derm_conf: float | None = None,
     expression_lines_conf: float | None = None,
 ) -> CombinedFaceAnalysisResult:
+    """Ejecuta ambos modelos sobre la misma imagen."""
+    thresholds = get_inference_thresholds()
+    effective_derm_conf = derm_conf if derm_conf is not None else thresholds.derm_conf
     lines_conf = (
         expression_lines_conf
         if expression_lines_conf is not None
-        else settings.expression_lines_conf_threshold
+        else thresholds.expression_lines_conf
     )
-    """
-    Ejecuta ambos modelos sobre la misma imagen.
-    Si dermatología falla, propaga la excepción (mismo comportamiento que face-analyze).
-    Si líneas de expresión falla, devuelve bloque degradado en expression_lines.
-    """
-    detections = run_derm_conditions_detection(image_bytes, conf=derm_conf)
+    detections = run_derm_conditions_detection(image_bytes, conf=effective_derm_conf)
     diagnosis = build_diagnosis(detections)
     expression_lines = run_expression_lines_safe(image_bytes, conf=lines_conf)
+    if "model_conf_threshold" not in expression_lines:
+        expression_lines["model_conf_threshold"] = lines_conf
     logger.info(
         "Análisis combinado: derm_conf=%.2f expression_lines_conf=%.2f",
-        derm_conf,
+        effective_derm_conf,
         lines_conf,
     )
 
     payload = {
         "analysis_type": "combined_facial_analysis",
-        "affections": build_affections_payload(detections, diagnosis, derm_conf),
+        "affections": build_affections_payload(detections, diagnosis, effective_derm_conf),
         "expression_lines": expression_lines,
         "combined_diagnosis": build_combined_diagnosis(diagnosis, expression_lines),
     }
@@ -182,7 +181,7 @@ def analyze_face_total(
         payload=payload,
         detections=detections,
         diagnosis=diagnosis,
-        derm_conf=derm_conf,
+        derm_conf=effective_derm_conf,
     )
 
 
@@ -190,21 +189,20 @@ def analyze_face_double(
     image_bytes_1: bytes,
     image_bytes_2: bytes,
     *,
-    derm_conf: float = 0.85,
+    derm_conf: float | None = None,
 ) -> CombinedFaceAnalysisResult:
-    """
-    Ejecuta YOLO dermatológico en dos imágenes, fusiona detecciones y genera
-    un único diagnóstico. No ejecuta análisis de líneas de expresión.
-    """
-    detections_1 = run_derm_conditions_detection(image_bytes_1, conf=derm_conf)
-    detections_2 = run_derm_conditions_detection(image_bytes_2, conf=derm_conf)
+    """Ejecuta YOLO dermatológico en dos imágenes y fusiona detecciones."""
+    thresholds = get_inference_thresholds()
+    effective_derm_conf = derm_conf if derm_conf is not None else thresholds.derm_conf
+    detections_1 = run_derm_conditions_detection(image_bytes_1, conf=effective_derm_conf)
+    detections_2 = run_derm_conditions_detection(image_bytes_2, conf=effective_derm_conf)
     all_detections = detections_1 + detections_2
     diagnosis = build_diagnosis(all_detections)
     expression_lines = EMPTY_EXPRESSION_LINES.copy()
 
     logger.info(
         "Análisis doble: derm_conf=%.2f detecciones=%d (img1=%d, img2=%d)",
-        derm_conf,
+        effective_derm_conf,
         len(all_detections),
         len(detections_1),
         len(detections_2),
@@ -212,7 +210,7 @@ def analyze_face_double(
 
     payload = {
         "analysis_type": "combined_facial_analysis_double",
-        "affections": build_affections_payload(all_detections, diagnosis, derm_conf),
+        "affections": build_affections_payload(all_detections, diagnosis, effective_derm_conf),
         "expression_lines": expression_lines,
         "combined_diagnosis": build_combined_diagnosis(diagnosis, expression_lines),
         "images_processed": 2,
@@ -222,5 +220,5 @@ def analyze_face_double(
         payload=payload,
         detections=all_detections,
         diagnosis=diagnosis,
-        derm_conf=derm_conf,
+        derm_conf=effective_derm_conf,
     )

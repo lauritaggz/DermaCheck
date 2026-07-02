@@ -15,8 +15,6 @@ interface AnalyzeParams {
   imageBlob: Blob;
   userId: string;
   consent: AnalysisConsentPayload;
-  confidenceThreshold?: number;
-  expressionLinesConf?: number;
   onQueueUpdate?: (update: QueueProgressUpdate) => void;
 }
 
@@ -25,7 +23,6 @@ interface AnalyzeDoubleParams {
   imageBlob2: Blob;
   userId: string;
   consent: AnalysisConsentPayload;
-  confidenceThreshold?: number;
   onQueueUpdate?: (update: QueueProgressUpdate) => void;
 }
 
@@ -71,8 +68,6 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     imageBlob,
     userId,
     consent,
-    confidenceThreshold = 0.25,
-    expressionLinesConf,
     onQueueUpdate,
   }: AnalyzeParams): Promise<AnalysisWithDiagnosis | null> => {
     setError(null);
@@ -81,7 +76,6 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       userId,
       sessionId: consent.sessionId,
       allowTrainingStorage: consent.allowTrainingStorage,
-      confidenceThreshold,
       sizeBytes: imageBlob.size,
     });
 
@@ -89,11 +83,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       const formData = new FormData();
       formData.append('face_image', imageBlob, 'capture.jpg');
       formData.append('user_id', userId);
-      formData.append('conf', confidenceThreshold.toString());
       appendConsentFields(formData, consent);
-      if (expressionLinesConf !== undefined) {
-        formData.append('expression_lines_conf', expressionLinesConf.toString());
-      }
 
       const payload = await runAnalysisJob(formData, onQueueUpdate);
 
@@ -101,6 +91,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
         userId,
         sessionId: consent.sessionId,
         totalDetections: payload.analysis.total_detections,
+        modelConfThreshold: payload.analysis.model_conf_threshold,
         expressionLinesDetected: payload.expression_lines?.detected ?? false,
         processingTimeMs: payload.analysis.processing_time_ms,
       });
@@ -124,7 +115,6 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
     imageBlob2,
     userId,
     consent,
-    confidenceThreshold = 0.25,
     onQueueUpdate,
   }: AnalyzeDoubleParams): Promise<AnalysisWithDiagnosis | null> => {
     setError(null);
@@ -133,7 +123,6 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       userId,
       sessionId: consent.sessionId,
       allowTrainingStorage: consent.allowTrainingStorage,
-      confidenceThreshold,
       sizeBytes1: imageBlob1.size,
       sizeBytes2: imageBlob2.size,
     });
@@ -143,7 +132,6 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
       formData.append('face_image_1', imageBlob1, 'capture_1.jpg');
       formData.append('face_image_2', imageBlob2, 'capture_2.jpg');
       formData.append('user_id', userId);
-      formData.append('conf', confidenceThreshold.toString());
       appendConsentFields(formData, consent);
 
       const payload = await runAnalysisJob(formData, onQueueUpdate);
@@ -152,6 +140,7 @@ export function useDermatologyAnalysis(): UseDermatologyAnalysisResult {
         userId,
         sessionId: consent.sessionId,
         totalDetections: payload.analysis.total_detections,
+        modelConfThreshold: payload.analysis.model_conf_threshold,
         imagesProcessed: payload.images_processed ?? 2,
         processingTimeMs: payload.analysis.processing_time_ms,
       });

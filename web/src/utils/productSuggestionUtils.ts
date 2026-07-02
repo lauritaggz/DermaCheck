@@ -13,6 +13,93 @@ function getProductSearchableText(product: SuggestedProduct): string {
   return normalizeTextForQuery(`${product.nombre} ${product.descripcion ?? ''}`);
 }
 
+/** Alias y tokens cortos para emparejar ingredientes en nombre/descripción del producto. */
+const INGREDIENT_SEARCH_ALIASES: Record<string, string[]> = {
+  'acido hialuronico': ['acido hialuronico', 'hialuronico', 'hyaluronic'],
+  glicerina: ['glicerina', 'glycerin', 'glycerina'],
+  ceramidas: ['ceramidas', 'ceramide'],
+  urea: ['urea'],
+  niacinamida: ['niacinamida'],
+  pantenol: ['pantenol'],
+  'acido salicilico': ['acido salicilico', 'salicilico'],
+  'acido azelaico': ['acido azelaico', 'azelaico'],
+  'avena coloidal': ['avena coloidal', 'avena'],
+  'vitamina c': ['vitamina c', 'ascorbico'],
+  'peroxido de benzoilo': ['peroxido de benzoilo', 'benzoilo'],
+};
+
+const QUERY_INGREDIENT_PATTERNS: Array<{ pattern: RegExp; ingredientLabel: string }> = [
+  { pattern: /glicerina/i, ingredientLabel: 'Glicerina' },
+  { pattern: /ceramidas/i, ingredientLabel: 'Ceramidas' },
+  { pattern: /hialuronico|hyaluronic/i, ingredientLabel: 'Ácido hialurónico' },
+  { pattern: /\burea\b/i, ingredientLabel: 'Urea' },
+  { pattern: /niacinamida/i, ingredientLabel: 'Niacinamida' },
+  { pattern: /pantenol/i, ingredientLabel: 'Pantenol' },
+  { pattern: /salicilico/i, ingredientLabel: 'Ácido salicílico' },
+  { pattern: /azelaico/i, ingredientLabel: 'Ácido azelaico' },
+  { pattern: /avena/i, ingredientLabel: 'Avena coloidal' },
+  { pattern: /vitamina\s*c/i, ingredientLabel: 'Vitamina C' },
+  { pattern: /benzoilo/i, ingredientLabel: 'Peróxido de benzoílo' },
+  { pattern: /protector solar|spf|fps/i, ingredientLabel: 'Protector solar' },
+];
+
+export function getIngredientSearchTokens(ingredientName: string): string[] {
+  const normalized = normalizeTextForQuery(ingredientName);
+  const primary = normalized.split('(')[0].trim();
+  const tokens = new Set<string>([normalized, primary]);
+
+  for (const [key, aliases] of Object.entries(INGREDIENT_SEARCH_ALIASES)) {
+    if (primary === key || normalized.includes(key)) {
+      aliases.forEach((alias) => tokens.add(alias));
+    }
+  }
+
+  primary
+    .split(' ')
+    .filter((word) => word.length > 3)
+    .forEach((word) => tokens.add(word));
+
+  return Array.from(tokens).filter(Boolean);
+}
+
+export function ingredientMatchesSearchable(
+  ingredientName: string,
+  searchable: string,
+): boolean {
+  return getIngredientSearchTokens(ingredientName).some((token) => searchable.includes(token));
+}
+
+/** Ingredientes inferidos por la query usada en el scraper (p. ej. crema hidratante ceramidas). */
+export function getIngredientsMatchedByQuery(matchedQuery?: string): string[] {
+  if (!matchedQuery?.trim()) return [];
+
+  const normalized = normalizeTextForQuery(matchedQuery);
+  const matched: string[] = [];
+  const seen = new Set<string>();
+
+  for (const { pattern, ingredientLabel } of QUERY_INGREDIENT_PATTERNS) {
+    if (!pattern.test(normalized)) continue;
+    const key = ingredientLabel.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    matched.push(ingredientLabel);
+  }
+
+  return matched;
+}
+
+function dedupeIngredientLabels(labels: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const label of labels) {
+    const key = label.toLowerCase().trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(label);
+  }
+  return result;
+}
+
 function countPharmaciesWithPrice(product: SuggestedProduct): number {
   return Object.values(product.precios).filter((price) => price != null && price > 0).length;
 }
@@ -29,9 +116,9 @@ export function getMatchingRecommendedIngredients(
   for (const rec of recommendations) {
     for (const ingredient of rec.suggestedIngredients ?? []) {
       const name = getIngredientName(ingredient);
-      const key = normalizeTextForQuery(name);
+      const key = name.toLowerCase().trim();
       if (!key || seen.has(key)) continue;
-      if (searchable.includes(key)) {
+      if (ingredientMatchesSearchable(name, searchable)) {
         seen.add(key);
         matched.push(name);
       }
@@ -53,8 +140,8 @@ export function getMatchingConditionLabels(
 
   for (const rec of recommendations) {
     const hasIngredientMatch = (rec.suggestedIngredients ?? []).some((ingredient) => {
-      const key = normalizeTextForQuery(getIngredientName(ingredient));
-      return key && searchable.includes(key);
+      const name = getIngredientName(ingredient);
+      return name && ingredientMatchesSearchable(name, searchable);
     });
     if (!hasIngredientMatch) continue;
 
@@ -135,7 +222,10 @@ export function rankSuggestedProducts(
 ): SuggestedProduct[] {
   const scored = products
     .map((product) => {
-      const matchedIngredients = getMatchingRecommendedIngredients(product, recommendations);
+      const matchedIngredients = dedupeIngredientLabels([
+        ...getMatchingRecommendedIngredients(product, recommendations),
+        ...getIngredientsMatchedByQuery(product.matchedQuery),
+      ]);
       return {
         ...product,
         matchedIngredients,

@@ -10,8 +10,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.schemas.combined_analysis import CombinedFacialAnalysisResponse
+from app.services.inference_thresholds import get_inference_thresholds
 from app.services.analysis_combined_service import analyze_face_double, analyze_face_total
 from app.services.consent_validation_service import AnalysisConsentContext
 from app.services.inference_lock import inference_lock
@@ -37,23 +37,17 @@ def execute_combined_single(
     content: bytes,
     user_id: int,
     consent_ctx: AnalysisConsentContext,
-    conf: float,
-    expression_lines_conf: float | None,
     db: Session,
 ) -> dict[str, Any]:
     """Análisis combinado (derm + líneas) sobre una imagen."""
+    thresholds = get_inference_thresholds()
     start_time = time.perf_counter()
-    effective_lines_conf = (
-        expression_lines_conf
-        if expression_lines_conf is not None
-        else settings.expression_lines_conf_threshold
-    )
 
     with inference_lock():
         combined = analyze_face_total(
             content,
-            derm_conf=conf,
-            expression_lines_conf=effective_lines_conf,
+            derm_conf=thresholds.derm_conf,
+            expression_lines_conf=thresholds.expression_lines_conf,
         )
 
     processing_time_ms = (time.perf_counter() - start_time) * 1000
@@ -105,14 +99,18 @@ def execute_combined_double(
     content_2: bytes,
     user_id: int,
     consent_ctx: AnalysisConsentContext,
-    conf: float,
     db: Session,
 ) -> dict[str, Any]:
     """Análisis doble fusionado."""
+    thresholds = get_inference_thresholds()
     start_time = time.perf_counter()
 
     with inference_lock():
-        combined = analyze_face_double(content_1, content_2, derm_conf=conf)
+        combined = analyze_face_double(
+            content_1,
+            content_2,
+            derm_conf=thresholds.derm_conf,
+        )
 
     processing_time_ms = (time.perf_counter() - start_time) * 1000
     combined.payload["affections"]["analysis"]["processing_time_ms"] = processing_time_ms
